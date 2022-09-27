@@ -135,6 +135,7 @@ function loadScene() {
     clampTipLeft.position.set(35, 0, -15);
     clampTipRight.position.set(35, 0, 15);
     clampTipLeft.rotation.y = Math.PI / 2;
+    clampTipLeft.rotation.z = Math.PI;
     clampTipRight.rotation.y = Math.PI / 2;
 
     clamp.add(clampTipRight);
