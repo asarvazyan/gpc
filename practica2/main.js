@@ -1,7 +1,7 @@
 /**
  * main.js
  * 
- * Implements basic structure of ThreeJS program
+ * Lab 2 of GPC
  * @author <arsar1@inf.upv.es>
  *
  */
