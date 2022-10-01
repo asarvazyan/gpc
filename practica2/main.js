@@ -1,7 +1,7 @@
 /**
  * main.js
  * 
- * Lab 2 of GPC
+ * Lab 3 of GPC
  * @author <arsar1@inf.upv.es>
  *
  */
@@ -23,24 +23,23 @@ function init() {
     scene.background = new THREE.Color(0.5, 0.5, 0.5);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.set(0, 300, 200);
+    camera.position.set(250, 350, 200);
     camera.lookAt(0, 50, 0);
 }
 
 function loadScene() {
     scene.add(new THREE.AxesHelper(40));
-
-    const floorMaterial = new THREE.MeshBasicMaterial({color:'red', wireframe:is_wire});
-    const baseMaterial = new THREE.MeshBasicMaterial({color:'yellow', wireframe:is_wire});
-    const armMaterial = new THREE.MeshBasicMaterial({color:'blue', wireframe:is_wire});
-    const forearmMaterial = new THREE.MeshBasicMaterial({color:'green', wireframe:is_wire});
-    const clampMaterial = new THREE.MeshBasicMaterial({color:'purple', wireframe:is_wire});
-    const clampTipMaterial = new THREE.MeshBasicMaterial({color: "orange", wireframe: is_wire});
+    
+    const floorMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "blue"});
+    const baseMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
+    const armMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
+    const forearmMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
+    const clampMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
+    const clampTipMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 100, 100), floorMaterial);
     floor.rotation.x = -Math.PI/2;
     floor.position.set(0, 0, 0);
-    scene.add(floor);
     
     // Construct robot
     robot = new THREE.Object3D();
@@ -88,55 +87,115 @@ function loadScene() {
     arm.add(forearm);
 
     const clamp = new THREE.Object3D();
-    const leftClampBox  = new THREE.Mesh(new THREE.BoxGeometry(20, 19, 4, 3, 3), clampMaterial);
-    const rightClampBox = new THREE.Mesh(new THREE.BoxGeometry(20, 19, 4, 3, 3), clampMaterial);
-    leftClampBox.position.set(  15, 0, -15);
-    rightClampBox.position.set( 15, 0,  15);
+    const leftClampBox  = new THREE.Mesh(new THREE.BoxGeometry(19, 20, 4, 3, 3), clampMaterial);
+    const rightClampBox = new THREE.Mesh(new THREE.BoxGeometry(19, 20, 4, 3, 3), clampMaterial);
+    leftClampBox.position.set(  16, 0, -15);
+    rightClampBox.position.set( 16, 0,  15);
     
     const clampTipGeometry = new THREE.BufferGeometry();
+    
     const clampTipVertices = new Float32Array([
-        -2, -10, -9.5,
-        -2,  -5,  9.5,
-        -2,  10, -9.5,
-        -2,   5,  9.5,
-         2, -10, -9.5,
-         0,  -5,  9.5,
-         2,  10, -9.5,
-         0,   5,  9.5,
+        // Front 
+         9.5,  -5,  0, // Bottom right small
+         9.5,   5,  0, // Top right small
+         9.5,  -5,  2, // Bottom left small
+         9.5,   5,  2, // Top left small
+        
+        // Right
+        -9.5, -10, -2, // Bottom right big
+         9.5,  -5,  0, // Bottom right small
+        -9.5,  10, -2, // Top right big
+         9.5,   5,  0, // Top right small
+        // Back
+        -9.5, -10, -2, // Bottom right big
+        -9.5,  10, -2, // Top right big
+        -9.5, -10,  2, // Bottom left big
+        -9.5,  10,  2, // Top left big
+        // Left
+        -9.5, -10,  2, // Bottom left big
+         9.5,  -5,  2, // Bottom left small
+        -9.5,  10,  2, // Top left big
+         9.5,   5,  2, // Top left small
+        // Top
+        -9.5,  10, -2, // Top right big
+         9.5,   5,  0, // Top right small
+        -9.5,  10,  2, // Top left big
+         9.5,   5,  2, // Top left small
+        // Bottom
+        -9.5, -10, -2, // Bottom right big
+         9.5,  -5,  0, // Bottom right small
+        -9.5, -10,  2, // Bottom left big
+         9.5,  -5,  2, // Bottom left small
     ]);
 
-    // We define the indices such that the normals are 
-    // well-defined (outgoing) by default
-    const clampTipIndices = [
-        0, 1, 3,
-        3, 2, 0,
+    const clampTipNormals = new Float32Array([
+        // Front
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
         
-        4, 0, 2,
-        2, 6, 4,
+        // Right
+        0, 0, -1,
+        0, 0, -1,
+        0, 0, -1,
+        0, 0, -1,
 
-        1, 5, 7,
-        7, 3, 1,
+        // Back
+        -1, 0, 0,
+        -1, 0, 0,
+        -1, 0, 0,
+        -1, 0, 0,
 
-        5, 4, 6,
-        6, 7, 5,
+        // Left
+        0, 0, 1,
+        0, 0, 1,
+        0, 0, 1,
+        0, 0, 1,
+        
+        // Top
+        0, 1, 0,
+        0, 1, 0,
+        0, 1, 0,
+        0, 1, 0,
 
-        4, 5, 1,
-        1, 0, 4,
+        // Bottom
+        0, -1, 0,
+        0, -1, 0,
+        0, -1, 0,
+        0, -1, 0,
+    ]);
+    
 
-        2, 3, 7,
-        7, 6, 2
+    const clampTipIndices = [
+        // Front
+        0, 1, 2,
+        3, 2, 1,
+        // Right
+        4, 6, 5,
+        7, 5, 6,
+        // Back
+        8, 10, 9,
+        11, 9, 10,
+        // Left
+        12, 13, 14,
+        15, 14, 13,
+        // Top
+        16, 18, 17,
+        19, 17, 18,
+        // Bottom
+        20, 21, 22, 
+        23, 22, 21,
     ];
 
-    clampTipGeometry.setAttribute('position', new THREE.BufferAttribute(clampTipVertices, 3));
     clampTipGeometry.setIndex(clampTipIndices);
-
+    clampTipGeometry.setAttribute('position', new THREE.BufferAttribute(clampTipVertices, 3));
+    clampTipGeometry.setAttribute('normal', new THREE.BufferAttribute(clampTipNormals, 3));
+    
     const clampTipLeft = new THREE.Mesh(clampTipGeometry, clampTipMaterial);
     const clampTipRight = new THREE.Mesh(clampTipGeometry, clampTipMaterial);
-    clampTipLeft.position.set(35, 0, -15);
-    clampTipRight.position.set(35, 0, 15);
-    clampTipLeft.rotation.y = Math.PI / 2;
-    clampTipLeft.rotation.z = Math.PI;
-    clampTipRight.rotation.y = Math.PI / 2;
+    clampTipLeft.position.set( 35, 0, -15);
+    clampTipRight.position.set(35, 0,  15);
 
     clamp.add(clampTipRight);
     clamp.add(clampTipLeft);
@@ -146,9 +205,11 @@ function loadScene() {
     clamp.position.set(0, 80, 0);
     forearm.add(clamp);
 
+
     base.add(arm);
     robot.add(base);
     scene.add(robot);
+    scene.add(floor);
 }
 
 function update() {
@@ -162,9 +223,11 @@ function render() {
 }
 
 window.addEventListener('resize', () => {
+    // Update camera
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
+    // Update renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
