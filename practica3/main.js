@@ -235,11 +235,14 @@ function init() {
     camera.lookAt(0, 50, 0);
     
     const ar = window.innerWidth / window.innerHeight; // Aspect Ratio
-
+    
+    /*
     if(ar > 1)
         ortho_top_camera = new THREE.OrthographicCamera(-L * ar, L * ar,      L,      -L, 300, 1000);
     else
         ortho_top_camera = new THREE.OrthographicCamera(     -L,      L, L / ar, -L / ar, 300, 1000);
+    */
+    ortho_top_camera = new THREE.OrthographicCamera(-L, L, L, -L, 300, 1000);
 
     ortho_top_camera.position.set(0, 600, 0);
     ortho_top_camera.lookAt(0, 0, 0);
@@ -276,7 +279,7 @@ function render() {
     renderer.clear();
     
     const ortho_size = Math.min(window.innerWidth / 4, window.innerHeight / 4);
-    renderer.setViewport(0, 3 * window.innerHeight / 4, ortho_size, ortho_size);
+    renderer.setViewport(0, window.innerHeight - ortho_size, ortho_size, ortho_size);
     renderer.render(scene, ortho_top_camera);
 
     renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
@@ -284,21 +287,9 @@ function render() {
 }
 
 window.addEventListener('resize', () => {
-    const ar = window.innerWidth / window.innerHeight;
-    // Update perspective camera
-    camera.aspect = ar;
+    // Update cameras
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
-    // Update orthographic camera
-    if(ar > 1){
-        ortho_top_camera.left   = -L * ar;
-        ortho_top_camera.right  =  L * ar;
-    } else {
-        ortho_top_camera.top    =  L / ar;
-        ortho_top_camera.bottom = -L / ar;
-    }
- 
-
     ortho_top_camera.updateProjectionMatrix();
 
     // Update renderer
