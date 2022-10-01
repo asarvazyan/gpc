@@ -7,6 +7,7 @@
  */
 
 let renderer, scene, camera;
+let ortho_top_camera, L = 30;
 let robot;
 let is_wire = false;
 let is_flatshade = false;
@@ -221,16 +222,32 @@ function loadRobot() {
 function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    renderer.autoClear = false;
+    renderer.setClearColor(0xAAAAAA);
+
     document.body.appendChild(renderer.domElement);
 
     scene =  new THREE.Scene()
-    scene.background = new THREE.Color(0.5, 0.5, 0.5);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.set(250, 350, 200);
     camera.lookAt(0, 50, 0);
+    
+    const ar = window.innerWidth / window.innerHeight; // Aspect Ratio
+
+    if(ar > 1)
+        ortho_top_camera = new THREE.OrthographicCamera(-L * ar, L * ar,      L,      -L, 300, 1000);
+    else
+        ortho_top_camera = new THREE.OrthographicCamera(     -L,      L, L / ar, -L / ar, 300, 1000);
+
+    ortho_top_camera.position.set(0, 600, 0);
+    ortho_top_camera.lookAt(0, 0, 0);
+    ortho_top_camera.up = new THREE.Vector3(0, 0, -1);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.maxDistance = 500;
+    controls.minDistance = 50;
     controls.update();
 }
 
@@ -242,7 +259,8 @@ function loadScene() {
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 100, 100), floorMaterial);
     floor.rotation.x = -Math.PI/2;
     floor.position.set(0, 0, 0);
-
+    
+    robot.rotation.y = Math.PI / 2; // so it looks good on ortho camera
     scene.add(robot);
     scene.add(floor);
 }
@@ -254,13 +272,34 @@ function update() {
 function render() {
     requestAnimationFrame(render);
     update();
-    renderer.render(scene,camera);
+
+    renderer.clear();
+    
+    const ortho_size = Math.min(window.innerWidth / 4, window.innerHeight / 4);
+    renderer.setViewport(0, 3 * window.innerHeight / 4, ortho_size, ortho_size);
+    renderer.render(scene, ortho_top_camera);
+
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.render(scene, camera);
 }
 
 window.addEventListener('resize', () => {
-    // Update camera
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const ar = window.innerWidth / window.innerHeight;
+    // Update perspective camera
+    camera.aspect = ar;
     camera.updateProjectionMatrix();
+
+    // Update orthographic camera
+    if(ar > 1){
+        ortho_top_camera.left   = -L * ar;
+        ortho_top_camera.right  =  L * ar;
+    } else {
+        ortho_top_camera.top    =  L / ar;
+        ortho_top_camera.bottom = -L / ar;
+    }
+ 
+
+    ortho_top_camera.updateProjectionMatrix();
 
     // Update renderer
     renderer.setSize(window.innerWidth, window.innerHeight);
