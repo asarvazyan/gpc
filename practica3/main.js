@@ -139,6 +139,7 @@ function loadRobotClamp() {
 
     clampTipLeft.position.set( 35, 0, -15);
     clampTipRight.position.set(35, 0,  15);
+    clampTipRight.rotation.x = Math.PI;
 
     clamp.add(clampTipRight);
     clamp.add(clampTipLeft);
