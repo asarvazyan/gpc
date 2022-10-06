@@ -8,13 +8,14 @@
 
 let renderer, scene, camera;
 let ortho_top_camera, L = 30;
-let robot;
+let robot, animation_controller;
 let is_wire = false;
 let is_flatshade = false;
 let robot_material;
 
 init();
 loadScene();
+setupGUI();
 render();
 
 function loadClampTipGeometry() {
@@ -219,6 +220,34 @@ function loadRobot() {
     return robot;
 }
 
+function setupGUI() {
+    animation_controller = {
+        rotation_base: 0,
+        rotation_arm: 0,
+        rotationY_forearm: 0,
+        rotationZ_forearm: 0,
+        rotation_clamp: 0,
+        separation_clamp: 0,
+        toggle_wire_solid: false,
+        animate: function() { console.log("Animate!"); },
+    };
+
+    const gui = new lil.GUI();
+
+    gui.title("Control Robot");
+
+    gui.add(animation_controller, "rotation_base", -180, 180, 0.025).name("Giro Base");
+    gui.add(animation_controller, "rotation_arm", -180, 180, 0.025).name("Giro Brazo");
+    gui.add(animation_controller, "rotationY_forearm", -180, 180, 0.025).name("Giro Antebrazo Y");
+    gui.add(animation_controller, "rotationZ_forearm", -180, 180, 0.025).name("Giro Antebrazo Z");
+    gui.add(animation_controller, "rotation_clamp", -180, 180, 0.025).name("Giro Pinza");
+    gui.add(animation_controller, "separation_clamp", -50, 50, 0.025).name("Separacion Pinza");
+    gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
+    gui.add(animation_controller, "animate").name("Anima");
+
+}
+
+
 function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -247,27 +276,6 @@ function init() {
     controls.minDistance = 50;
     controls.update();
 
-    const animation_controller = {
-        rotation_base: 0,
-        rotation_arm: 0,
-        rotationY_forearm: 0,
-        rotationZ_forearm: 0,
-        rotation_clamp: 0,
-        separation_clamp: 0,
-        toggle_wire_solid: false,
-        animate: function() { console.log("Animate!"); },
-    };
-
-    const gui = new lil.GUI();
-    gui.title("Control Robot");
-    gui.add(animation_controller, "rotation_base").name("Giro Base");
-    gui.add(animation_controller, "rotation_arm").name("Giro Brazo");
-    gui.add(animation_controller, "rotationY_forearm").name("Giro Antebrazo Y");
-    gui.add(animation_controller, "rotationZ_forearm").name("Giro Antebrazo Z");
-    gui.add(animation_controller, "rotation_clamp").name("Giro Pinza");
-    gui.add(animation_controller, "separation_clamp").name("Separacion Pinza");
-    gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
-    gui.add(animation_controller, "animate").name("Anima");
 }
 
 function loadScene() {
