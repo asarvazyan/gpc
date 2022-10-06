@@ -247,8 +247,6 @@ function init() {
     controls.minDistance = 50;
     controls.update();
 
-    const gui = new lil.GUI();
-
     const animation_controller = {
         rotation_base: 0,
         rotation_arm: 0,
@@ -260,15 +258,16 @@ function init() {
         animate: function() { console.log("Animate!"); },
     };
 
+    const gui = new lil.GUI();
     gui.title("Control Robot");
-    gui.add(animation_controller, "rotation_base");
-    gui.add(animation_controller, "rotation_arm");
-    gui.add(animation_controller, "rotationY_forearm");
-    gui.add(animation_controller, "rotationZ_forearm");
-    gui.add(animation_controller, "rotation_clamp");
-    gui.add(animation_controller, "separation_clamp");
-    gui.add(animation_controller, "toggle_wire_solid");
-    gui.add(animation_controller, "animate");
+    gui.add(animation_controller, "rotation_base").name("Giro Base");
+    gui.add(animation_controller, "rotation_arm").name("Giro Brazo");
+    gui.add(animation_controller, "rotationY_forearm").name("Giro Antebrazo Y");
+    gui.add(animation_controller, "rotationZ_forearm").name("Giro Antebrazo Z");
+    gui.add(animation_controller, "rotation_clamp").name("Giro Pinza");
+    gui.add(animation_controller, "separation_clamp").name("Separacion Pinza");
+    gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
+    gui.add(animation_controller, "animate").name("Anima");
 }
 
 function loadScene() {
