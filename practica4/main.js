@@ -13,10 +13,41 @@ let is_wire = false;
 let is_flatshade = false;
 let robot_material;
 
+let robot_attrs = {
+    z_speed: 5,
+    x_speed: 5,
+}
+
 init();
 loadScene();
 setupGUI();
 render();
+
+const KEYS = {
+    ARROW_LEFT: 37,
+    ARROW_UP: 38,
+    ARROW_RIGHT: 39,
+    ARROW_DOWN: 40,
+    SPACE: 32,
+}
+
+function onDocumentKeyDown(event) {
+    console.log(event.which);
+    var key_code = event.which;
+    
+    if (key_code == KEYS.ARROW_DOWN) {
+        robot.position.z += robot_attrs.z_speed;
+    } else if (key_code == KEYS.ARROW_UP) {
+        robot.position.z -= robot_attrs.z_speed;
+    } else if (key_code == KEYS.ARROW_LEFT) {
+        robot.position.x -= robot_attrs.x_speed;
+    } else if (key_code == KEYS.ARROW_RIGHT) {
+        robot.position.x += robot_attrs.x_speed;
+    } else if (key_code == KEYS.SPACE) {
+        robot.position.set(0, 0, 0);
+    }
+}
+
 
 function loadClampTipGeometry() {
     const clampTipGeometry = new THREE.BufferGeometry();
@@ -237,14 +268,13 @@ function setupGUI() {
     gui.title("Control Robot");
 
     gui.add(animation_controller, "rotation_base", -180, 180, 0.025).name("Giro Base");
-    gui.add(animation_controller, "rotation_arm", -180, 180, 0.025).name("Giro Brazo");
+    gui.add(animation_controller, "rotation_arm", -180, 180, 0.025).name("Giro Brazo"); // video shows less range?
     gui.add(animation_controller, "rotationY_forearm", -180, 180, 0.025).name("Giro Antebrazo Y");
     gui.add(animation_controller, "rotationZ_forearm", -180, 180, 0.025).name("Giro Antebrazo Z");
     gui.add(animation_controller, "rotation_clamp", -180, 180, 0.025).name("Giro Pinza");
-    gui.add(animation_controller, "separation_clamp", -50, 50, 0.025).name("Separacion Pinza");
+    gui.add(animation_controller, "separation_clamp", 0, 15, 0.025).name("Separacion Pinza");
     gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
     gui.add(animation_controller, "animate").name("Anima");
-
 }
 
 
@@ -276,6 +306,7 @@ function init() {
     controls.minDistance = 50;
     controls.update();
 
+    window.addEventListener("keydown", onDocumentKeyDown, false);
 }
 
 function loadScene() {
@@ -293,7 +324,7 @@ function loadScene() {
 }
 
 function update() {
-    return
+    ortho_top_camera.position.set(robot.position.x, 600, robot.position.z);
 }
 
 function render() {
