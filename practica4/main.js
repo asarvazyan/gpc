@@ -6,12 +6,16 @@
  *
  */
 
+import {TWEEN} from "../r140/lib/tween.module.min.js";
+
 let renderer, scene, camera;
 let ortho_top_camera, L = 30;
 let robot, animation_controller;
 let is_wire = false;
 let is_flatshade = false;
 let robot_material;
+
+let gui;
 
 let robot_attrs = {
     z_speed: 5,
@@ -53,7 +57,11 @@ function onDocumentKeyDown(event) {
 }
 
 function animate() {
-    console.log("Animate!");
+    gui.hide();
+
+    console.log("Animate!"); 
+
+    gui.show();
 }
 
 function setupGUI() {
@@ -68,7 +76,7 @@ function setupGUI() {
         animate: animate,
     };
 
-    const gui = new lil.GUI();
+    gui = new lil.GUI();
 
     gui.title("Control Robot");
 

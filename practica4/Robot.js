@@ -25,7 +25,7 @@ class Robot {
     }
 
     loadRobot() {
-        robot = new THREE.Object3D();
+        let robot = new THREE.Object3D();
         const base = this.loadBase();
 
         robot.add(base);
@@ -270,5 +270,3 @@ class Robot {
 
 }
 
-
-//export {Robot};
