@@ -31,6 +31,10 @@ const KEYS = {
     SPACE: 32,
 }
 
+function to_rad(deg) {
+    return deg / 180 * Math.PI;
+}
+
 function onDocumentKeyDown(event) {
     console.log(event.which);
     var key_code = event.which;
@@ -153,7 +157,6 @@ function loadClampTipGeometry() {
     return clampTipGeometry;
 }
 
-
 function loadRobotClamp() {
     const clamp = new THREE.Object3D();
     const leftClampBox  = new THREE.Mesh(new THREE.BoxGeometry(19, 20, 4, 3, 3), robot_material);
@@ -169,6 +172,11 @@ function loadRobotClamp() {
 
     const clampTipLeft = new THREE.Mesh(clampTipGeometry, robot_material);
     const clampTipRight = new THREE.Mesh(clampTipGeometry, robot_material);
+    
+    clampTipLeft.name = "clampTipLeft"
+    clampTipRight.name = "clampTipRight"
+    leftClampBox.name = "leftClampBox"
+    rightClampBox.name = "rightClampBox"
 
     clampTipLeft.position.set( 35, 0, -15);
     clampTipRight.position.set(35, 0,  15);
@@ -207,6 +215,15 @@ function loadRobotForearm() {
     const clamp = loadRobotClamp();
     forearm.add(clamp);
 
+    clamp.name = "clamp"
+
+    forearmNerve1.name = "forearmNerve1"
+    forearmNerve2.name = "forearmNerve2"
+    forearmNerve3.name = "forearmNerve3"
+    forearmNerve4.name = "forearmNerve4"
+    forearmTop.name = "forearmTop"
+    forearmBase.name = "forearmBase"
+
     return forearm;
 }
 
@@ -220,6 +237,11 @@ function loadRobotArm() {
     armBase.rotation.z = -Math.PI / 2;
     armTendon.position.set(0, 60, 0);
     armTop.position.set(0, 120, 0);
+    
+    armBase.name = "armBase"
+    armTop.name = "armTop"
+    armTendon.name = "armTendon"
+    arm.name = "arm"
 
     arm.add(armBase);
     arm.add(armTendon);
@@ -235,6 +257,7 @@ function loadRobotArm() {
 function loadRobotBase() {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(50, 50, 15, 32, 32), robot_material);
     base.position.set(0, 7.5, 0);
+    base.name = "base";
 
     const arm = loadRobotArm();
     base.add(arm);
@@ -268,10 +291,10 @@ function setupGUI() {
     gui.title("Control Robot");
 
     gui.add(animation_controller, "rotation_base", -180, 180, 0.025).name("Giro Base");
-    gui.add(animation_controller, "rotation_arm", -180, 180, 0.025).name("Giro Brazo"); // video shows less range?
+    gui.add(animation_controller, "rotation_arm", -45, 45, 0.025).name("Giro Brazo"); // video shows less range?
     gui.add(animation_controller, "rotationY_forearm", -180, 180, 0.025).name("Giro Antebrazo Y");
-    gui.add(animation_controller, "rotationZ_forearm", -180, 180, 0.025).name("Giro Antebrazo Z");
-    gui.add(animation_controller, "rotation_clamp", -180, 180, 0.025).name("Giro Pinza");
+    gui.add(animation_controller, "rotationZ_forearm", -90, 90, 0.025).name("Giro Antebrazo Z");
+    gui.add(animation_controller, "rotation_clamp", -40, 220, 0.025).name("Giro Pinza");
     gui.add(animation_controller, "separation_clamp", 0, 15, 0.025).name("Separacion Pinza");
     gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
     gui.add(animation_controller, "animate").name("Anima");
@@ -321,10 +344,47 @@ function loadScene() {
     robot.rotation.y = Math.PI / 2; // so it looks good on ortho camera
     scene.add(robot);
     scene.add(floor);
+    console.log(robot.children);
 }
+
+function setRobotMaterial() {
+    robot_material = new THREE.MeshNormalMaterial({wireframe: is_wire, flatShading: is_flatshade});
+
+    robot.getObjectByName("base").material = robot_material;
+    robot.getObjectByName("armTop").material = robot_material;
+    robot.getObjectByName("armTendon").material = robot_material;
+    robot.getObjectByName("armBase").material = robot_material;
+    robot.getObjectByName("forearmBase").material = robot_material;
+    robot.getObjectByName("forearmNerve1").material = robot_material;
+    robot.getObjectByName("forearmNerve2").material = robot_material;
+    robot.getObjectByName("forearmNerve3").material = robot_material;
+    robot.getObjectByName("forearmNerve4").material = robot_material;
+    robot.getObjectByName("forearmTop").material = robot_material;
+    robot.getObjectByName("leftClampBox").material = robot_material;
+    robot.getObjectByName("rightClampBox").material = robot_material;
+    robot.getObjectByName("clampTipRight").material = robot_material;
+    robot.getObjectByName("clampTipLeft").material = robot_material;
+}
+
 
 function update() {
     ortho_top_camera.position.set(robot.position.x, 600, robot.position.z);
+    is_wire = animation_controller.toggle_wire_solid;
+    setRobotMaterial();
+    robot.getObjectByName("base").rotation.y = to_rad(animation_controller.rotation_base);
+
+    /*
+    animation_controller = {
+        rotation_base: 0,
+        rotation_arm: 0,
+        rotationY_forearm: 0,
+        rotationZ_forearm: 0,
+        rotation_clamp: 0,
+        separation_clamp: 0,
+        toggle_wire_solid: false,
+        animate: function() { console.log("Animate!"); },
+    };
+    */
 }
 
 function render() {
