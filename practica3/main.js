@@ -267,9 +267,8 @@ function loadScene() {
     scene.add(robot);
     scene.add(floor);
 }
-
 function update() {
-    return
+    ortho_top_camera.position.set(robot.position.x, 600, robot.position.z);
 }
 
 function render() {
