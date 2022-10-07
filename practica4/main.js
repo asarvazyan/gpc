@@ -9,7 +9,7 @@
 import {TWEEN} from "../r140/lib/tween.module.min.js";
 
 let renderer, scene, camera;
-let ortho_top_camera, L = 30;
+let ortho_top_camera, L = 100;
 let robot, animation_controller;
 let is_wire = false;
 let is_flatshade = false;
@@ -40,6 +40,10 @@ function to_rad(deg) {
     return deg / 180 * Math.PI;
 }
 
+function to_deg(rad) {
+    return rad / Math.PI * 180;
+}
+
 function onDocumentKeyDown(event) {
     var key_code = event.which;
     
@@ -57,11 +61,66 @@ function onDocumentKeyDown(event) {
 }
 
 function animate() {
-    gui.hide();
+    console.log("Animate!");
 
-    console.log("Animate!"); 
+    const moveBase = new TWEEN.Tween(robot.geometry.getObjectByName("base").rotation)
+                        .to({y: to_rad(-130) }, 1000)
+                        .onUpdate(val => { animation_controller.rotation_base = to_deg(val.y)} );
 
-    gui.show();
+    const moveClamp = new TWEEN.Tween(robot.geometry.getObjectByName("clamp").rotation)
+                        .to({z: to_rad(30)}, 500)
+                        .onUpdate(val => { animation_controller.rotation_clamp = to_deg(val.z)} );
+    
+    const clapClamps = new TWEEN.Tween(robot.geometry.getObjectByName("clampTipLeft").position)
+                        .to({ z: 0}, 400)
+                        .onUpdate(val => {animation_controller.separation_clamp = val.z})
+                        .to({ z: 15}, 400)
+                        .onUpdate(val => {animation_controller.separation_clamp = val.z})
+                        .repeat(20);
+
+    const translateRobot = new TWEEN.Tween(robot.geometry.position)
+                        .to({ x: 100, z: 100}, 1500)
+                        .easing(TWEEN.Easing.Quadratic.In);
+
+    const moveArm = new TWEEN.Tween(robot.geometry.getObjectByName("arm").rotation)
+                        .to({ z: Math.PI / 6 }, 1000)
+                        .interpolation(TWEEN.Interpolation.Bezier)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .onUpdate(val => { animation_controller.rotation_arm = to_deg(val.z) })
+                        .delay(500);
+    
+    const moveForearmZ = new TWEEN.Tween(robot.geometry.getObjectByName("forearm").rotation)
+                        .to({ z: -Math.PI / 6}, 1500)
+                        .interpolation(TWEEN.Interpolation.Bezier)
+                        .onUpdate(val => { animation_controller.rotationZ_forearm = to_deg(val.z)})
+                        .delay(500)
+
+    const moveForearmY = new TWEEN.Tween(robot.geometry.getObjectByName("forearm").rotation)
+                        .to({ y: -Math.PI / 4}, 1500)
+                        .interpolation(TWEEN.Interpolation.Bezier)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .onUpdate(val => { animation_controller.rotationY_forearm = to_deg(val.y)})
+
+    const moveForearmYBack = new TWEEN.Tween(robot.geometry.getObjectByName("forearm").rotation)
+                        .to({ y: to_rad(20)}, 1500)
+                        .interpolation(TWEEN.Interpolation.Bezier)
+                        .easing(TWEEN.Easing.Quadratic.Out)
+                        .onUpdate(val => { animation_controller.rotationY_forearm = to_deg(val.y)})
+                        
+    const rotateClamps = new TWEEN.Tween(robot.geometry.getObjectByName("clamp").rotation)
+                        .to({ z: to_rad(100)}, 400)
+                        .onUpdate(val => {animation_controller.rotation_clamp = to_deg(val.z)})
+        
+    moveBase.chain(moveClamp);
+    moveClamp.chain(translateRobot);
+    translateRobot.chain(moveArm);
+    moveArm.chain(moveForearmZ);
+    moveForearmZ.chain(moveForearmY);
+    moveForearmY.chain(moveForearmYBack);
+    moveForearmYBack.chain(rotateClamps);
+
+    clapClamps.start();
+    moveBase.start();
 }
 
 function setupGUI() {
@@ -150,7 +209,8 @@ function updateRobot() {
     robot.geometry.getObjectByName("clampBoxRight").position.z = animation_controller.separation_clamp;
 }
 
-function update() {
+function update(time) {
+    TWEEN.update(time);
     ortho_top_camera.position.set(robot.geometry.position.x, 600, robot.geometry.position.z);
 
     if (is_wire != animation_controller.toggle_wire_solid) {
@@ -165,9 +225,10 @@ function update() {
 
 }
 
-function render() {
+function render(time) {
     requestAnimationFrame(render);
-    update();
+
+    update(time);
 
     renderer.clear();
     
