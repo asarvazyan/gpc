@@ -9,6 +9,7 @@ let renderer, scene, camera, stats;
 let ortho_top_camera, L = 30;
 let is_wire = false, is_flatshade = false;
 
+
 KEYS = {
     W: 87,
     A: 65,
@@ -25,17 +26,8 @@ let keyboard = {};
 let player = {
     height: 10,
     speed : 1,
-    turnSensitivity: Math.PI * 0.02,
+    turnSensitivity: 0.008,
 }
-
-
-window.addEventListener("keydown", keyDown);
-window.addEventListener("keyup", keyUp)
-
-init();
-loadScene();
-render();
-
 
 function init() {
     renderer = new THREE.WebGLRenderer();
@@ -47,15 +39,24 @@ function init() {
     scene =  new THREE.Scene()
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.set(100, 10, 100);
-    camera.lookAt(0, 10, 0);
+    camera.position.set(100, player.height, 100);
+    camera.lookAt(0, player.height, 0);
+    camera.rotation.order = "YXZ";
      
-    //const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    //controls.update();
-
     stats = new Stats();
     stats.showPanel(0);
     document.body.appendChild(stats.dom);
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp)
+    window.addEventListener("mousemove", onMouseMove)
+    window.addEventListener('resize', onResize);
+    window.addEventListener("mousedown", () => {
+        document.body.requestPointerLock();
+    });
+
+    loadScene();
+    render();
 }
 
 function loadScene() {
@@ -153,13 +154,6 @@ function updateFPSCamera() {
 		camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
 		camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
-
-	if(keyboard[KEYS.ARROW_LEFT]){
-		camera.rotation.y += player.turnSensitivity;
-	}
-	if(keyboard[KEYS.ARROW_RIGHT]){
-		camera.rotation.y -= player.turnSensitivity;
-	}
 }
 
 function update() {
@@ -176,7 +170,8 @@ function render() {
     renderer.render(scene, camera);
 }
 
-window.addEventListener('resize', () => {
+
+function onResize() {
     // Update cameras
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -185,14 +180,22 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-});
+}
 
-function keyUp(event) {
+
+function onMouseMove(event) {
+    camera.rotation.y -= event.movementX * player.turnSensitivity;
+    camera.rotation.x -= event.movementY * player.turnSensitivity;
+}
+
+
+function onKeyUp(event) {
     keyboard[event.keyCode] = false
 }
 
-function keyDown(event) {
+function onKeyDown(event) {
     console.log(event.keyCode);
     keyboard[event.keyCode] = true
 }
 
+window.onload = init;
