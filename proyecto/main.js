@@ -8,7 +8,13 @@
 let renderer, scene, camera, stats;
 let ortho_top_camera, L = 30;
 let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
-let is_wire = false, is_flatshade = false;
+let is_wire = true, is_flatshade = false;
+
+let fbx_loader;
+let gltf_loader;
+let cemetery;
+
+let gun, gun_mixer;
 
 
 KEYS = {
@@ -25,8 +31,8 @@ KEYS = {
 let keyboard = {};
 
 let player = {
-    height: 10,
-    speed : 1,
+    height: 1,
+    speed : 0.7,
     turnSensitivity: 0.003,
 }
 
@@ -39,11 +45,11 @@ function init() {
 
     scene =  new THREE.Scene()
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.set(100, player.height, 100);
-    camera.lookAt(0, player.height, 0);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, player.height, 0);
+    camera.lookAt(100, player.height, 0);
     camera.rotation.order = "YXZ";
-     
+
     stats = new Stats();
     stats.showPanel(0);
     document.body.appendChild(stats.dom);
@@ -55,14 +61,51 @@ function init() {
     window.addEventListener("mousedown", () => {
         document.body.requestPointerLock();
     });
+    
+
+    fbx_loader = new THREE.FBXLoader();
+    gltf_loader = new THREE.GLTFLoader();
 
     loadScene();
     render();
 }
 
 function loadScene() {
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+    hemiLight.position.set( 0, 200, 0 );
+    scene.add( hemiLight );
+
+    const dirLight = new THREE.DirectionalLight( 0xffffff );
+    dirLight.position.set( 0, 200, 100 );
+    dirLight.castShadow = true;
+    dirLight.shadow.camera.top = 180;
+    dirLight.shadow.camera.bottom = - 100;
+    dirLight.shadow.camera.left = - 120;
+    dirLight.shadow.camera.right = 120;
+    scene.add(dirLight);
+
+    fbx_loader.load("resources/player/gun/M4A1Rigged.fbx", object => {
+        
+        gun = object;
+
+        gun_mixer = new THREE.AnimationMixer(gun)
+        const action = gun_mixer.clipAction(gun.animations[11]);
+        action.play();
+        
+        gun.traverse((child) => {
+            if (child.isMesh) {
+                child.receiveShadow = true;
+            }
+        });
+
+        gun.scale.set(0.001, 0.001, 0.001);
+        scene.add(object)
+    });
+    
+
+    
     const axesHelper = new THREE.AxesHelper(20);
-    axesHelper.position.set(80, 10, 80);
+    axesHelper.position.set(80, player.height, 80);
 
     const environment = loadEnvironment();
     environment.position.set(0, 0, 0);
@@ -147,7 +190,6 @@ function updateFPSCamera() {
 		camera.position.z += Math.cos(camera.rotation.y) * player.speed;
 	}
 	if(keyboard[KEYS.A]){
-		// Redirect motion by 90 degrees
 		camera.position.x -= Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
 		camera.position.z -= Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
@@ -157,11 +199,39 @@ function updateFPSCamera() {
 	}
 }
 
+function updateGun() {
+    gun.position.set(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z,
+    );
+    
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        -camera.rotation.x,
+        camera.rotation.y - Math.PI - Math.PI / 16,
+        camera.rotation.z,
+        "YXZ"
+    ))
+
+    gun.rotation.setFromQuaternion(quaternion);
+    /*
+    gun.rotation.set(
+        -camera.rotation.x,
+        camera.rotation.y - Math.PI // - Math.PI / 16,
+        camera.rotation.z,
+    );
+    */
+}
+
 function update() {
     stats.begin();
 
     updateFPSCamera();
-
+    if (gun)
+        updateGun();
+    
+    if (gun_mixer)
+        gun_mixer.update(1/40);
     stats.end();
 }
 
@@ -185,15 +255,13 @@ function onResize() {
 
 
 function onMouseMove(event) {
-    //console.log(camera.getWorldDirection(new THREE.Vector3(0, 0, -1))); 
     camera_direction = camera.getWorldDirection(neg_z);
-    console.log(event.movementY) 
     
     if ((camera_direction.y < -max_y_rotation && event.movementY > 0) ||
         (camera_direction.y >  max_y_rotation && event.movementY < 0))
         return
     camera.rotation.y -= event.movementX * player.turnSensitivity;
-    camera.rotation.x -= event.movementY * player.turnSensitivity;
+    // camera.rotation.x -= event.movementY * player.turnSensitivity;
 }
 
 
@@ -202,7 +270,6 @@ function onKeyUp(event) {
 }
 
 function onKeyDown(event) {
-    console.log(event.keyCode);
     keyboard[event.keyCode] = true
 }
 
