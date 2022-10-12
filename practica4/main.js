@@ -71,13 +71,6 @@ function animate() {
                         .to({z: to_rad(30)}, 500)
                         .onUpdate(val => { animation_controller.rotation_clamp = to_deg(val.z)} );
     
-    const clapClamps = new TWEEN.Tween(robot.geometry.getObjectByName("clampTipLeft").position)
-                        .to({ z: 0}, 400)
-                        .onUpdate(val => {animation_controller.separation_clamp = val.z})
-                        .to({ z: 15}, 400)
-                        .onUpdate(val => {animation_controller.separation_clamp = val.z})
-                        .repeat(20);
-
     const translateRobot = new TWEEN.Tween(robot.geometry.position)
                         .to({ x: 100, z: 100}, 1500)
                         .easing(TWEEN.Easing.Quadratic.In);
@@ -119,7 +112,6 @@ function animate() {
     moveForearmY.chain(moveForearmYBack);
     moveForearmYBack.chain(rotateClamps);
 
-    clapClamps.start();
     moveBase.start();
 }
 
@@ -139,12 +131,38 @@ function setupGUI() {
 
     gui.title("Control Robot");
 
-    gui.add(animation_controller, "rotation_base", -180, 180, 0.025).name("Giro Base");
-    gui.add(animation_controller, "rotation_arm", -45, 45, 0.025).name("Giro Brazo"); // video shows less range?
-    gui.add(animation_controller, "rotationY_forearm", -180, 180, 0.025).name("Giro Antebrazo Y");
-    gui.add(animation_controller, "rotationZ_forearm", -90, 90, 0.025).name("Giro Antebrazo Z");
-    gui.add(animation_controller, "rotation_clamp", -40, 220, 0.025).name("Giro Pinza");
-    gui.add(animation_controller, "separation_clamp", 0, 15, 0.025).name("Separacion Pinza");
+    gui.add(animation_controller, "rotation_base", -180, 180, 0.025).name("Giro Base")
+        .onChange(value => { 
+            robot.geometry.getObjectByName("base").rotation.y = to_rad(animation_controller.rotation_base)
+        }).listen();
+
+    gui.add(animation_controller, "rotation_arm", -45, 45, 0.025).name("Giro Brazo")
+        .onChange(value => {
+            robot.geometry.getObjectByName("arm").rotation.z = to_rad(animation_controller.rotation_arm);
+        }).listen();
+
+    gui.add(animation_controller, "rotationY_forearm", -180, 180, 0.025).name("Giro Antebrazo Y")
+        .onChange(value => {
+            robot.geometry.getObjectByName("forearm").rotation.y = to_rad(animation_controller.rotationY_forearm);
+        }).listen();
+
+    gui.add(animation_controller, "rotationZ_forearm", -90, 90, 0.025).name("Giro Antebrazo Z")
+        .onChange(value =>  {
+            robot.geometry.getObjectByName("forearm").rotation.z = to_rad(animation_controller.rotationZ_forearm);
+        }).listen();
+
+    gui.add(animation_controller, "rotation_clamp", -40, 220, 0.025).name("Giro Pinza")
+        .onChange(value =>  {
+            robot.geometry.getObjectByName("clamp").rotation.z = to_rad(animation_controller.rotation_clamp);
+        }).listen();
+    gui.add(animation_controller, "separation_clamp", 0, 15, 0.025).name("Separacion Pinza")
+        .onChange(value =>  {
+            robot.geometry.getObjectByName("clampBoxLeft").position.z = -animation_controller.separation_clamp;
+            robot.geometry.getObjectByName("clampTipLeft").position.z = -animation_controller.separation_clamp;
+            robot.geometry.getObjectByName("clampBoxRight").position.z = animation_controller.separation_clamp;
+            robot.geometry.getObjectByName("clampTipRight").position.z = animation_controller.separation_clamp;
+        }).listen();
+
     gui.add(animation_controller, "toggle_wire_solid").name("Alambres");
     gui.add(animation_controller, "animate").name("Anima");
 }
@@ -220,7 +238,7 @@ function update(time) {
     robot_material = new THREE.MeshNormalMaterial({wireframe: is_wire, flatShading: is_flatshade});
     robot.setMaterial(robot_material);
 
-    updateRobot() 
+    //updateRobot() 
 
 
 }
