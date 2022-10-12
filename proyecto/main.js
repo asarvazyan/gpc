@@ -7,6 +7,7 @@
 
 let renderer, scene, camera, stats;
 let ortho_top_camera, L = 30;
+let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
 let is_wire = false, is_flatshade = false;
 
 
@@ -26,7 +27,7 @@ let keyboard = {};
 let player = {
     height: 10,
     speed : 1,
-    turnSensitivity: 0.008,
+    turnSensitivity: 0.003,
 }
 
 function init() {
@@ -184,6 +185,13 @@ function onResize() {
 
 
 function onMouseMove(event) {
+    //console.log(camera.getWorldDirection(new THREE.Vector3(0, 0, -1))); 
+    camera_direction = camera.getWorldDirection(neg_z);
+    console.log(event.movementY) 
+    
+    if ((camera_direction.y < -max_y_rotation && event.movementY > 0) ||
+        (camera_direction.y >  max_y_rotation && event.movementY < 0))
+        return
     camera.rotation.y -= event.movementX * player.turnSensitivity;
     camera.rotation.x -= event.movementY * player.turnSensitivity;
 }
