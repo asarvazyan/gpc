@@ -8,16 +8,33 @@
 let renderer, scene, camera, stats;
 let ortho_top_camera, L = 30;
 let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
-let is_wire = true, is_flatshade = false;
+let envsize = 60;
+
+
+let is_wire = false, is_flatshade = false;
 
 let fbx_loader;
 let gltf_loader;
-let cemetery;
+
+let arch, ruins;
 
 let gun, gun_mixer;
+let zombie;
 
+let loadingManager;
+let loadingScreen = {
+    scene: new THREE.Scene(),
+    camera: new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100),
+    box: new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.5, 0.5),
+        new THREE.MeshBasicMaterial({color: 0x4444ff}),
+    ),
+    counter: 0,
+};
 
-KEYS = {
+let resources_loaded = false;
+
+const KEYS = {
     W: 87,
     A: 65,
     S: 83,
@@ -36,12 +53,42 @@ let player = {
     turnSensitivity: 0.003,
 }
 
+const SPAWN_POINTS = [
+    [ 31, -1,  16],
+    [ 31, -1, -16],
+    [-31, -1,  16],
+    [-31, -1,  16],
+    [-31, -1, -16],
+    [ 16, -1,  31],
+    [ 16, -1, -31],
+    [-16, -1,  31],
+    [-16, -1, -31],
+];
+
 function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0xAAAAAA);
 
     document.body.appendChild(renderer.domElement);
+
+    // Loading Screen
+    loadingScreen.box.position.set(0, 0, 5);
+    loadingScreen.camera.lookAt(loadingScreen.box.position);
+    loadingScreen.scene.add(loadingScreen.box);
+
+    loadingManager = new THREE.LoadingManager(); 
+    loadingManager.onProgress = (item, loaded, total) => {
+        console.log(item, loaded, total);
+    };
+
+    loadingManager.onLoad = () => {
+        console.log("All resources loaded");
+        resources_loaded = true;
+
+        loadScene();
+        //render();
+    };
 
     scene =  new THREE.Scene()
 
@@ -63,11 +110,64 @@ function init() {
     });
     
 
-    fbx_loader = new THREE.FBXLoader();
-    gltf_loader = new THREE.GLTFLoader();
+    fbx_loader = new THREE.FBXLoader(loadingManager);
+    gltf_loader = new THREE.GLTFLoader(loadingManager);
 
-    loadScene();
+    loadResources();
     render();
+}
+
+function loadResources() {
+    /*
+    gltf_loader.load("resources/environment/centerpiece/source/Unity2Skfb.gltf", object => {
+        ruins = object.scene;
+        ruins.traverse((child) => {
+            if (child.isMesh) {
+                child.receiveShadow = true;
+                child.castShadow = true;
+            }
+        });
+    });
+
+    */
+
+    fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
+        zombie = object;
+        zombie.scale.set(0.02, 0.02, 0.02);
+        zombie.traverse((child) => {
+            if (child.isMesh) {
+                child.receiveShadow = true;
+                child.castShadow = true;
+            }
+        });
+    });
+
+    fbx_loader.load("resources/environment/arch/source/arch.FBX", object => {
+        arch = object;
+        arch.scale.set(0.02, 0.02, 0.02);
+        arch.traverse((child) => {
+            if (child.isMesh) {
+                child.receiveShadow = true;
+                child.castShadow = true;
+            }
+        });
+    });
+
+    fbx_loader.load("resources/player/gun/M4A1Rigged.fbx", object => {
+        gun = object;
+        gun.scale.set(0.001, 0.001, 0.001);
+
+        gun_mixer = new THREE.AnimationMixer(gun)
+        const action = gun_mixer.clipAction(gun.animations[0]);
+        action.play();
+        
+        gun.traverse((child) => {
+            if (child.isMesh) {
+                child.receiveShadow = true;
+            }
+        });
+
+    });
 }
 
 function loadScene() {
@@ -83,26 +183,6 @@ function loadScene() {
     dirLight.shadow.camera.left = - 120;
     dirLight.shadow.camera.right = 120;
     scene.add(dirLight);
-
-    fbx_loader.load("resources/player/gun/M4A1Rigged.fbx", object => {
-        
-        gun = object;
-
-        gun_mixer = new THREE.AnimationMixer(gun)
-        const action = gun_mixer.clipAction(gun.animations[11]);
-        action.play();
-        
-        gun.traverse((child) => {
-            if (child.isMesh) {
-                child.receiveShadow = true;
-            }
-        });
-
-        gun.scale.set(0.001, 0.001, 0.001);
-        scene.add(object)
-    });
-    
-
     
     const axesHelper = new THREE.AxesHelper(20);
     axesHelper.position.set(80, player.height, 80);
@@ -126,7 +206,7 @@ function loadEnvironment() {
         wall.castShadow = true;
         environment.add(wall);
     }); 
-
+    
     objects.forEach(object =>{
         object.castShadow = true;
         environment.add(object);
@@ -137,47 +217,82 @@ function loadEnvironment() {
 }
 
 function loadEnvironmentFloor() {
-    const floorMaterial = new THREE.MeshNormalMaterial({wireframe: is_wire, flatShading: is_flatshade});
+    const floorMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "pink"});
     
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 100, 100), floorMaterial);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(envsize, envsize, 20, 20), floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0, 0);
+    floor.position.set(0, -1, 0);
     floor.receiveShadow = true
 
     return floor;
 }
 
 function loadEnvironmentWalls(material) {
-    const wallMaterial = new THREE.MeshNormalMaterial({wireframe: is_wire, flatShading: is_flatshade});
+    const wallMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "grey"});
+    const archPosMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "black"});
 
-    const wall1 = new THREE.Mesh(new THREE.PlaneGeometry(50, 400, 50, 50), wallMaterial);
-    wall1.rotation.z = Math.PI / 2;
-    wall1.position.set(0, 0, -200);
+    let pos = envsize / 4;// + envsize / 6;
 
-    const wall2 = new THREE.Mesh(new THREE.PlaneGeometry(50, 400, 50, 50), wallMaterial);
-    wall2.rotation.z = Math.PI / 2;
+    const wall1 = new THREE.Object3D();
+    const wall_plane = new THREE.Mesh(new THREE.PlaneGeometry(15, envsize, 50, 50), wallMaterial);
+    wall_plane.rotation.z = Math.PI / 2;
+    
+    let sp_idx = Math.floor(Math.random() * SPAWN_POINTS.length);
+    let sp = SPAWN_POINTS[sp_idx];
+    zombie.position.set(sp[0], sp[1], sp[2]);
+
+    scene.add(zombie);
+
+    // arch positions
+    const ap1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 4, 10), archPosMaterial);
+    ap1.rotation.y = Math.PI / 2;
+    ap1.position.set(pos, 0, 0);
+    const ap2 = ap1.clone();
+    ap2.rotation.y = Math.PI / 2;
+    ap2.position.set(-pos, 0, 0);
+    ap1.name = "Spawn Position 1"
+    ap2.name = "Spawn Position 2"
+    
+    wall_arch1 = arch.clone();
+    wall_arch1.position.set(pos - 11, -1, 0);
+
+    wall_arch2 = arch.clone();
+    wall_arch2.position.set(-pos - 11, -1, 0);
+    
+    wall1.add(wall_plane);
+    wall1.add(wall_arch1);
+    wall1.add(wall_arch2);
+    wall1.add(ap1);
+    wall1.add(ap2);
+    wall1.rotation.y = Math.PI;
+    wall1.position.set(0, 0,  envsize / 2);
+
+    const wall2 = wall1.clone();
     wall2.rotation.y = Math.PI;
-    wall2.position.set(0, 0,  200);
-
-    const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(50, 400, 50, 50), wallMaterial);
-    wall3.rotation.z = Math.PI / 2;
+    wall2.position.set(0, 0, -envsize / 2);
+    
+    const wall3 = wall1.clone(); 
     wall3.rotation.y = Math.PI / 2;
-    wall3.position.set(-200, 0, 0);
+    wall3.position.set(-envsize / 2, 0, 0);
 
-    const wall4 = new THREE.Mesh(new THREE.PlaneGeometry(50, 400, 50, 50), wallMaterial);
-    wall4.rotation.z = Math.PI / 2;
+    const wall4 = wall1.clone();
     wall4.rotation.y = -Math.PI / 2;
-    wall4.position.set(200, 0, 0);
+    wall4.position.set(envsize / 2, 0, 0);
 
     return [wall1, wall2, wall3, wall4];
 }
 
 function loadEnvironmentObjects() {
-    const cubeMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
-    const cube = new THREE.Mesh(new THREE.BoxGeometry(50, 50, 20, 20), cubeMaterial);
-    cube.position.set(10, 10, 10);
+    //arch.position.set(0, 0, 0);
+    //arch.scale.set(0.02, 0.02, 0.02);
+
+    //gun.scale.set(0.001, 0.001, 0.001);
+
+    //ruins.position.set(0, -1, 0);
+    //ruins.scale.set(0.2, 0.2, 0.2);
+    //scene.add(ruins);
         
-    return [cube];
+    return [gun] //,ruins];
 }
 
 function updateFPSCamera() {
@@ -225,7 +340,7 @@ function updateGun() {
 
 function update() {
     stats.begin();
-
+    //console.log(camera.position); 
     updateFPSCamera();
     if (gun)
         updateGun();
@@ -236,6 +351,22 @@ function update() {
 }
 
 function render() {
+    if (resources_loaded === false) {
+        requestAnimationFrame(render);
+        
+        loadingScreen.counter += 0.01;
+        if (loadingScreen.counter == 360) {
+            loadingScreen.counter = 0;
+        }
+        // Lemniscate of Gerono
+        loadingScreen.box.position.x = 7 * Math.cos(loadingScreen.counter);
+        loadingScreen.box.position.y = 7 * Math.sin(2 * loadingScreen.counter) / 2;
+
+
+        renderer.render(loadingScreen.scene, loadingScreen.camera);
+        return;
+    }
+        
     requestAnimationFrame(render);
     update();
     renderer.render(scene, camera);
