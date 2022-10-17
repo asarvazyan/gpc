@@ -239,7 +239,8 @@ function loadEnvironmentWalls(material) {
     
     let sp_idx = Math.floor(Math.random() * SPAWN_POINTS.length);
     let sp = SPAWN_POINTS[sp_idx];
-    zombie.position.set(sp[0], sp[1], sp[2]);
+    //zombie.position.set(sp[0], sp[1], sp[2]);
+    zombie.position.set(10, -1, 10);
 
     scene.add(zombie);
 
@@ -392,7 +393,7 @@ function onMouseMove(event) {
         (camera_direction.y >  max_y_rotation && event.movementY < 0))
         return
     camera.rotation.y -= event.movementX * player.turnSensitivity;
-    // camera.rotation.x -= event.movementY * player.turnSensitivity;
+    camera.rotation.x -= event.movementY * player.turnSensitivity;
 }
 
 
