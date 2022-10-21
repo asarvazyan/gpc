@@ -42,7 +42,7 @@ class Robot {
 
     setMaterials() {
         for (var i = 0; i < this.geometry_meshes.length; i++) {
-            if (i < 1 || i >= 5 && i < 9  || i > 11)
+            if (i < 1 || i >= 5 && i < 10)
                 this.geometry_meshes[i].material = this.lambert;
             else if (i == 2)
                 this.geometry_meshes[i].material = this.sphere_phong;
