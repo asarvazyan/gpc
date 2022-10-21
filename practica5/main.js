@@ -227,7 +227,7 @@ function loadScene() {
     const environmentMap = new THREE.CubeTextureLoader().setPath("textures/cubemap/").load(
                     ["px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"]
             )
-    const room = new THREE.Mesh(new THREE.BoxGeometry(1500, 1500, 1500),
+    const envBox = new THREE.Mesh(new THREE.BoxGeometry(1500, 1500, 1500),
                     ["px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"]
         .map((value, index, list) => {
             return new THREE.MeshBasicMaterial({
@@ -236,11 +236,7 @@ function loadScene() {
             })
         })
     )
-    //room.translateY(900);
-    scene.add(room);
-
-    //scene.background = environmentMap;
-    //scene.environment = environmentMap;
+    scene.add(envBox);
 
     const floorDiffuse = textureLoader.load("wood_grain/Wood_Grain_DIFF.png")
     const floorRough = textureLoader.load("wood_grain/Wood_Grain_NRM.png")
