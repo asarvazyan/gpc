@@ -9,9 +9,6 @@
 class Robot {
     constructor(textureLoader, environmentMap){
         this.textureLoader = textureLoader;
-        const floorDiffuse = textureLoader.load("wood_grain/Wood_Grain_DIFF.png")
-        const floorRough = textureLoader.load("wood_grain/Wood_Grain_NRM.png")
-        const floorNormal = textureLoader.load("wood_grain/Wood_Grain_NRM.png")
 
         this.lambert = new THREE.MeshLambertMaterial({
             map: this.textureLoader.load("lapis/Main_Base_Color.png"),
