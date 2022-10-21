@@ -199,7 +199,7 @@ function init() {
 
     scene =  new THREE.Scene()
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1600);
     camera.position.set(250, 350, 200);
     camera.lookAt(0, 50, 0);
     
@@ -227,8 +227,20 @@ function loadScene() {
     const environmentMap = new THREE.CubeTextureLoader().setPath("textures/cubemap/").load(
                     ["px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"]
             )
+    const room = new THREE.Mesh(new THREE.BoxGeometry(1500, 1500, 1500),
+                    ["px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png"]
+        .map((value, index, list) => {
+            return new THREE.MeshBasicMaterial({
+                map: textureLoader.load("cubemap/"+value),
+                side: THREE.BackSide,
+            })
+        })
+    )
+    //room.translateY(900);
+    scene.add(room);
 
-    scene.background = environmentMap;
+    //scene.background = environmentMap;
+    //scene.environment = environmentMap;
 
     const floorDiffuse = textureLoader.load("wood_grain/Wood_Grain_DIFF.png")
     const floorRough = textureLoader.load("wood_grain/Wood_Grain_NRM.png")
