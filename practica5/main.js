@@ -1,7 +1,7 @@
 /**
  * main.js
  * 
- * Lab 4 of GPC
+ * Lab 5 of GPC
  * @author <arsar1@inf.upv.es>
  *
  */
