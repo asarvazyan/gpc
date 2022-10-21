@@ -10,19 +10,19 @@ let ortho_top_camera, L = 30;
 let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
 let envsize = 60;
 
-
 let is_wire = false, is_flatshade = false;
 
 let fbx_loader;
 let gltf_loader;
+let texture_loader, textures = {};
 
 let arch, ruins;
 
 let gun, gun_mixer;
 let zombie;
 
-let loadingManager;
-let loadingScreen = {
+let loading_manager;
+let loading_screen = {
     scene: new THREE.Scene(),
     camera: new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100),
     box: new THREE.Mesh(
@@ -73,16 +73,16 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     // Loading Screen
-    loadingScreen.box.position.set(0, 0, 5);
-    loadingScreen.camera.lookAt(loadingScreen.box.position);
-    loadingScreen.scene.add(loadingScreen.box);
+    loading_screen.box.position.set(0, 0, 5);
+    loading_screen.camera.lookAt(loading_screen.box.position);
+    loading_screen.scene.add(loading_screen.box);
 
-    loadingManager = new THREE.LoadingManager(); 
-    loadingManager.onProgress = (item, loaded, total) => {
+    loading_manager = new THREE.LoadingManager(); 
+    loading_manager.onProgress = (item, loaded, total) => {
         console.log(item, loaded, total);
     };
 
-    loadingManager.onLoad = () => {
+    loading_manager.onLoad = () => {
         console.log("All resources loaded");
         resources_loaded = true;
 
@@ -109,15 +109,66 @@ function init() {
         document.body.requestPointerLock();
     });
     
+    texture_loader = new THREE.TextureLoader(loading_manager).setPath("resources/");
 
-    fbx_loader = new THREE.FBXLoader(loadingManager);
-    gltf_loader = new THREE.GLTFLoader(loadingManager);
+    fbx_loader = new THREE.FBXLoader(loading_manager);
+    gltf_loader = new THREE.GLTFLoader(loading_manager);
 
     loadResources();
     render();
 }
 
+function loadTextures() {
+    textures["wall"] = {};
+    textures["wall"].map = texture_loader.load("environment/wall/Old_Rocks_DIFF.png");
+    textures["wall"].normalMap = texture_loader.load("environment/wall/Old_Rocks_NRM.png");
+    textures["wall"].bumpMap = texture_loader.load("environment/wall/Old_Rocks_DISP.png");
+
+    textures["wall"].map.repeat.set(10, 3);
+    textures["wall"].normalMap.repeat.set(10, 3);
+    textures["wall"].bumpMap.repeat.set(10, 3);
+    textures["wall"].map.wrapS = THREE.RepeatWrapping;
+    textures["wall"].normalMap.wrapS = THREE.RepeatWrapping;
+    textures["wall"].bumpMap.wrapS = THREE.RepeatWrapping;
+    textures["wall"].map.wrapT = THREE.RepeatWrapping;
+    textures["wall"].normalMap.wrapT = THREE.RepeatWrapping;
+    textures["wall"].bumpMap.wrapT = THREE.RepeatWrapping;
+    
+    textures["floor"] = {};
+    textures["floor"].map = texture_loader.load("environment/floor/Grass_Paver_Diamond_DIFF.jpg");
+    textures["floor"].normalMap = texture_loader.load("environment/wall/Grass_Paver_Diamond_NRM.jpg");
+    textures["floor"].bumpMap = texture_loader.load("environment/wall/Grass_Paver_Diamond_DISP.jpg");
+
+    textures["floor"].map.repeat.set(10, 10);
+    textures["floor"].normalMap.repeat.set(10, 10);
+    textures["floor"].bumpMap.repeat.set(10, 10);
+    textures["floor"].map.wrapS = THREE.RepeatWrapping;
+    textures["floor"].normalMap.wrapS = THREE.RepeatWrapping;
+    textures["floor"].bumpMap.wrapS = THREE.RepeatWrapping;
+    textures["floor"].map.wrapT = THREE.RepeatWrapping;
+    textures["floor"].normalMap.wrapT = THREE.RepeatWrapping;
+    textures["floor"].bumpMap.wrapT = THREE.RepeatWrapping;
+
+    textures["ceil"] = {};
+    textures["ceil"].map = texture_loader.load("environment/ceil/ScavengedCorrugatedMetalWall_basecolor.png");
+    textures["ceil"].normalMap = texture_loader.load("environment/ceil/ScavengedCorrugatedMetalWall_normal.png");
+    textures["ceil"].bumpMap = texture_loader.load("environment/ceil/ScavengedCorrugatedMetalWall_height.png");
+
+    textures["ceil"].map.repeat.set(6, 6);
+    textures["ceil"].normalMap.repeat.set(6, 6);
+    textures["ceil"].bumpMap.repeat.set(6, 6);
+    textures["ceil"].map.wrapS = THREE.RepeatWrapping;
+    textures["ceil"].normalMap.wrapS = THREE.RepeatWrapping;
+    textures["ceil"].bumpMap.wrapS = THREE.RepeatWrapping;
+    textures["ceil"].map.wrapT = THREE.RepeatWrapping;
+    textures["ceil"].normalMap.wrapT = THREE.RepeatWrapping;
+    textures["ceil"].bumpMap.wrapT = THREE.RepeatWrapping;
+}
+
 function loadResources() {
+
+    loadTextures();
+
     /*
     gltf_loader.load("resources/environment/centerpiece/source/Unity2Skfb.gltf", object => {
         ruins = object.scene;
@@ -144,7 +195,7 @@ function loadResources() {
 
     fbx_loader.load("resources/environment/arch/source/arch.FBX", object => {
         arch = object;
-        arch.scale.set(0.02, 0.02, 0.02);
+        arch.scale.set(0.02, 0.02, 0.04);
         arch.traverse((child) => {
             if (child.isMesh) {
                 child.receiveShadow = true;
@@ -171,18 +222,14 @@ function loadResources() {
 }
 
 function loadScene() {
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-    hemiLight.position.set( 0, 200, 0 );
-    scene.add( hemiLight );
+    const ambient = new THREE.AmbientLight(0x33333);
+    scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight( 0xffffff );
-    dirLight.position.set( 0, 200, 100 );
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.top = 180;
-    dirLight.shadow.camera.bottom = - 100;
-    dirLight.shadow.camera.left = - 120;
-    dirLight.shadow.camera.right = 120;
-    scene.add(dirLight);
+    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.3);
+    directional.position.set(0, 100, 0);
+    directional.castShadow = true;
+    scene.add(directional);
+
     
     const axesHelper = new THREE.AxesHelper(20);
     axesHelper.position.set(80, player.height, 80);
@@ -198,10 +245,13 @@ function loadEnvironment() {
     const environment = new THREE.Object3D;
 
     const floor   = loadEnvironmentFloor(); 
+    const ceil    = loadEnvironmentCeiling();
     const objects = loadEnvironmentObjects(); 
     const walls   = loadEnvironmentWalls(); 
     
-    environment.add(floor)
+    environment.add(floor);
+    environment.add(ceil);
+
     walls.forEach(wall =>{
         wall.castShadow = true;
         environment.add(wall);
@@ -216,8 +266,27 @@ function loadEnvironment() {
 
 }
 
+function loadEnvironmentCeiling() {
+    const floorMaterial = new THREE.MeshPhongMaterial({
+        map: textures["ceil"].map,
+        normalMap: textures["ceil"].normalMap,
+        bumpMap: textures["ceil"].bumpMap,
+    });
+    
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(envsize, envsize, 20, 20), floorMaterial);
+    floor.rotation.x = Math.PI / 2;
+    floor.position.set(0, 8, 0);
+    floor.receiveShadow = true;
+
+    return floor;
+}
+
 function loadEnvironmentFloor() {
-    const floorMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "pink"});
+    const floorMaterial = new THREE.MeshPhongMaterial({
+        map: textures["floor"].map,
+        normalMap: textures["floor"].normalMap,
+        bumpMap: textures["floor"].bumpMap,
+    });
     
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(envsize, envsize, 20, 20), floorMaterial);
     floor.rotation.x = -Math.PI / 2;
@@ -228,14 +297,17 @@ function loadEnvironmentFloor() {
 }
 
 function loadEnvironmentWalls(material) {
-    const wallMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "grey"});
-    const archPosMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "black"});
+    const wallMaterial = new THREE.MeshPhongMaterial({
+        map: textures["wall"].map,
+        normalMap: textures["wall"].normalMap,
+        bumpMap: textures["wall"].bumpMap,
+    });
+    const archPosMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
 
     let pos = envsize / 4;// + envsize / 6;
 
     const wall1 = new THREE.Object3D();
-    const wall_plane = new THREE.Mesh(new THREE.PlaneGeometry(15, envsize, 50, 50), wallMaterial);
-    wall_plane.rotation.z = Math.PI / 2;
+    const wall_plane = new THREE.Mesh(new THREE.PlaneGeometry(envsize, 20, 50, 50), wallMaterial);
     
     let sp_idx = Math.floor(Math.random() * SPAWN_POINTS.length);
     let sp = SPAWN_POINTS[sp_idx];
@@ -246,6 +318,8 @@ function loadEnvironmentWalls(material) {
 
     // arch positions
     const ap1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 4, 10), archPosMaterial);
+    //const ap1 = new THREE.RectAreaLight(0xff0000, 10, 10, 4);
+
     ap1.rotation.y = Math.PI / 2;
     ap1.position.set(pos, 0, 0);
     const ap2 = ap1.clone();
@@ -255,10 +329,10 @@ function loadEnvironmentWalls(material) {
     ap2.name = "Spawn Position 2"
     
     wall_arch1 = arch.clone();
-    wall_arch1.position.set(pos - 11, -1, 0);
+    wall_arch1.position.set(pos - 11, -1, -0.5);
 
     wall_arch2 = arch.clone();
-    wall_arch2.position.set(-pos - 11, -1, 0);
+    wall_arch2.position.set(-pos - 11, -1, -0.5);
     
     wall1.add(wall_plane);
     wall1.add(wall_arch1);
@@ -267,6 +341,9 @@ function loadEnvironmentWalls(material) {
     wall1.add(ap2);
     wall1.rotation.y = Math.PI;
     wall1.position.set(0, 0,  envsize / 2);
+
+    //const a1help = new THREE.RectAreaLightHelper(a1p);
+    //a1help.add(a1p);
 
     const wall2 = wall1.clone();
     wall2.rotation.y = Math.PI;
@@ -330,6 +407,7 @@ function updateGun() {
     ))
 
     gun.rotation.setFromQuaternion(quaternion);
+
     /*
     gun.rotation.set(
         -camera.rotation.x,
@@ -341,13 +419,13 @@ function updateGun() {
 
 function update() {
     stats.begin();
-    //console.log(camera.position); 
     updateFPSCamera();
     if (gun)
         updateGun();
     
     if (gun_mixer)
         gun_mixer.update(1/40);
+
     stats.end();
 }
 
@@ -355,16 +433,16 @@ function render() {
     if (resources_loaded === false) {
         requestAnimationFrame(render);
         
-        loadingScreen.counter += 0.01;
-        if (loadingScreen.counter == 360) {
-            loadingScreen.counter = 0;
+        loading_screen.counter += 0.01;
+        if (loading_screen.counter == 360) {
+            loading_screen.counter = 0;
         }
         // Lemniscate of Gerono
-        loadingScreen.box.position.x = 7 * Math.cos(loadingScreen.counter);
-        loadingScreen.box.position.y = 7 * Math.sin(2 * loadingScreen.counter) / 2;
+        loading_screen.box.position.x = 7 * Math.cos(loading_screen.counter);
+        loading_screen.box.position.y = 7 * Math.sin(2 * loading_screen.counter) / 2;
 
 
-        renderer.render(loadingScreen.scene, loadingScreen.camera);
+        renderer.render(loading_screen.scene, loading_screen.camera);
         return;
     }
         
