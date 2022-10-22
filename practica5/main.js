@@ -183,15 +183,21 @@ function loadLights() {
     focal.angle = Math.PI / 4;
     focal.penumbra = 0.3;
     focal.castShadow = true;
-    focal.shadow.camera.far = 20;
-    focal.shadow.camera.fov = 80;
+    focal.shadow.camera.far    = 20;
+    focal.shadow.camera.fov    = 80;
+    focal.shadow.camera.near   = 1;
+    focal.shadow.camera.far    = 1000;
+    focal.shadow.camera.left   = -1000;
+    focal.shadow.camera.right  = 1000;
+    focal.shadow.camera.top    = 1000;
+    focal.shadow.camera.bottom = -1000;
     scene.add(focal);
 }
 
 function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-
+    renderer.shadowMap.enabled = true;
     renderer.autoClear = false;
     renderer.setClearColor(0xAAAAAA);
 
@@ -249,6 +255,8 @@ function loadScene() {
     });
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 100, 100), floorMaterial);
+    floor.receiveShadow = true;
+    floor.castShadow = true;
     floor.rotation.x = -Math.PI/2;
     floor.position.set(0, 0, 0);
     
