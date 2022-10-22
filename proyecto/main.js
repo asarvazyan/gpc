@@ -38,7 +38,9 @@ let player = {
     height: 2.5,
     speed : 0.7,
     turn_sensitivity: 0.003,
+    can_shoot: 0,
 }
+const CAN_SHOOT_EVERY = 3;
 
 let zombies = [];
 let zombies_current_round = [];
@@ -46,6 +48,7 @@ let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward
 let current_round = 0;
 let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
+let bullets = [];
 
 // Game constants
 const KEYS = {
@@ -515,7 +518,7 @@ function loadEnvironmentWalls(material) {
     return [wall1, wall2, wall3, wall4];
 }
 
-function updateFPSCamera() {
+function updateFPS() {
     if(keyboard[KEYS.W]){
 		camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
 		camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
@@ -532,6 +535,36 @@ function updateFPSCamera() {
 		camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
 		camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
+
+    if(keyboard[32] && player.can_shoot >= CAN_SHOOT_EVERY) {
+        let bullet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 8, 8),
+            new THREE.MeshPhongMaterial({color: 0xDDDD11})
+        );
+
+        bullet.alive = true;
+        bullet.position.set(
+            camera.position.x,
+            camera.position.y,
+            camera.position.z,
+        );
+
+        bullet.velocity = new THREE.Vector3(
+            -Math.sin(camera.rotation.y),
+            Math.sin(camera.rotation.x),
+            -Math.cos(camera.rotation.y)
+        );
+
+        setTimeout(() => {
+            bullet.alive = false;
+            scene.remove(bullet);
+        }, 1000);
+
+        bullets.push(bullet);
+        scene.add(bullet);
+        player.can_shoot = 0;
+    }
+    if (player.can_shoot < CAN_SHOOT_EVERY) player.can_shoot++; 
 }
 
 function updateGun() {
@@ -577,11 +610,23 @@ function updateZombies() {
     });
 }
 
+function updateBullets() {
+    for (var i = 0; i < bullets.length; i++) {
+        if (bullets[i] === undefined) contiune;
+        if (bullets[i].alive == false) {
+            bullets.splice(i, 1);
+            continue;
+        }
+
+        bullets[i].position.add(bullets[i].velocity);
+    }
+}
+
 function update() {
     stats.begin();
-
-    updateFPSCamera();
-
+    
+    updateFPS();
+    updateBullets();
     updateGun();
     
     gun_mixer.update(1/40);
@@ -634,6 +679,7 @@ function onMouseMove(event) {
         return
     camera.rotation.y -= event.movementX * player.turn_sensitivity;
     camera.rotation.x -= event.movementY * player.turn_sensitivity;
+
 }
 
 
