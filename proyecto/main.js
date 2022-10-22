@@ -120,10 +120,11 @@ function init() {
 
 function loadTextures() {
     textures["wall"] = {};
-    textures["wall"].map = texture_loader.load("environment/wall/Old_Rocks_DIFF.png");
-    textures["wall"].normalMap = texture_loader.load("environment/wall/Old_Rocks_NRM.png");
-    textures["wall"].bumpMap = texture_loader.load("environment/wall/Old_Rocks_DISP.png");
 
+    textures["wall"].map = texture_loader.load("environment/wall/MetalPipeWallRusty_basecolor.png");
+    textures["wall"].normalMap = texture_loader.load("environment/wall/MetalPipeWallRusty_normal.png");
+    textures["wall"].bumpMap = texture_loader.load("environment/wall/MetalPipeWallRusty_height.png");
+    
     textures["wall"].map.repeat.set(10, 3);
     textures["wall"].normalMap.repeat.set(10, 3);
     textures["wall"].bumpMap.repeat.set(10, 3);

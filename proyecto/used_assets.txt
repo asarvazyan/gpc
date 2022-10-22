@@ -1,7 +1,7 @@
-https://sketchfab.com/3d-models/m4a1-animated-low-poly-91de835e74e24b65b69659bdbe392ea9#download
-
-https://sketchfab.com/3d-models/arch-743422dda7db46a081dcd48ae503da6c
+Weapon: https://sketchfab.com/3d-models/m4a1-animated-low-poly-91de835e74e24b65b69659bdbe392ea9#download
+Wall Arches: https://sketchfab.com/3d-models/arch-743422dda7db46a081dcd48ae503da6c
+Wall Texture: https://gametextures.com/texture/metal-pipe-wall-rusty
+Ceiling Texture: https://gametextures.com/texture/scavenged-corrugated-metal-wall
+Floor Texture: https://textures.pixel-furnace.com/texture?name=Diamond%20Grass%20Paver
 
 Zombies from mixamo
-
-https://textures.pixel-furnace.com/texture?name=Old%20Brick
