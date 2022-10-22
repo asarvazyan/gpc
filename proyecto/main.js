@@ -48,7 +48,7 @@ const KEYS = {
 let keyboard = {};
 
 let player = {
-    height: 1,
+    height: 2.5,
     speed : 0.7,
     turnSensitivity: 0.003,
 }
@@ -65,10 +65,12 @@ const SPAWN_POINTS = [
     [-16, -1, -31],
 ];
 
+
+
 function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0xAAAAAA);
+    renderer.setClearColor(0x000000);
 
     document.body.appendChild(renderer.domElement);
 
@@ -90,7 +92,7 @@ function init() {
         //render();
     };
 
-    scene =  new THREE.Scene()
+    scene =  new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, player.height, 0);
@@ -113,6 +115,7 @@ function init() {
 
     fbx_loader = new THREE.FBXLoader(loading_manager);
     gltf_loader = new THREE.GLTFLoader(loading_manager);
+
 
     loadResources();
     render();
@@ -222,7 +225,79 @@ function loadResources() {
     });
 }
 
+function loadLights() {
+    const ambient = new THREE.AmbientLight(0x33333);
+    scene.add(ambient);
+
+    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.3);
+    directional.position.set(0, 100, 0);
+    directional.castShadow = true;
+    scene.add(directional);
+
+    // One focal in the center
+    const focal = new THREE.SpotLight(0xFF0000, 0.3);
+    focal.position.set(0, 6, 0);
+    focal.target.position.set(0, -1, 0);
+    focal.angle = Math.PI / 4;
+    focal.penumbra = 0.3;
+    focal.castShadow = true;
+    focal.shadow.camera.far = 5;
+    focal.shadow.camera.fov = 10;
+    scene.add(focal);
+
+    // One focal at each corner
+    const focal1 = new THREE.SpotLight(0xFF0000, 0.3);
+    focal1.position.set(29.5, 7, 29.5);
+    focal1.target.position.set(0, 0, 0);
+    focal1.angle = Math.PI / 4;
+    focal1.penumbra = 0.3;
+    focal1.castShadow = true;
+    focal1.shadow.camera.far = 20;
+    focal1.shadow.camera.fov = 80;
+    scene.add(focal1);
+
+    const focal2 = new THREE.SpotLight(0xFF0000, 0.3);
+    focal2.position.set(-29.5, 7, 29.5);
+    focal2.target.position.set(0, 0, 0);
+    focal2.angle = Math.PI / 4;
+    focal2.penumbra = 0.3;
+    focal2.castShadow = true;
+    focal2.shadow.camera.far = 20;
+    focal2.shadow.camera.fov = 80;
+    scene.add(focal2);
+
+    const focal3 = new THREE.SpotLight(0xFF0000, 0.3);
+    focal3.position.set(29.5, 7, -29.5);
+    focal3.target.position.set(0, 0, 0);
+    focal3.angle = Math.PI / 4;
+    focal3.penumbra = 0.3;
+    focal3.castShadow = true;
+    focal3.shadow.camera.far = 20;
+    focal3.shadow.camera.fov = 80;
+    scene.add(focal3);
+
+    const focal4 = new THREE.SpotLight(0xFF0000, 0.3);
+    focal4.position.set(-29.5, 7, -29.5);
+    focal4.target.position.set(0, 0, 0);
+    focal4.angle = Math.PI / 4;
+    focal4.penumbra = 0.3;
+    focal4.castShadow = true;
+    focal4.shadow.camera.far = 20;
+    focal4.shadow.camera.fov = 80;
+    scene.add(focal4);
+    
+    /*
+    scene.add(new THREE.SpotLightHelper(focal));
+    scene.add(new THREE.SpotLightHelper(focal1));
+    scene.add(new THREE.SpotLightHelper(focal2));
+    scene.add(new THREE.SpotLightHelper(focal3));
+    scene.add(new THREE.SpotLightHelper(focal4));
+    */
+}
+
 function loadScene() {
+    loadLights();
+
     const ambient = new THREE.AmbientLight(0x33333);
     scene.add(ambient);
 
@@ -249,6 +324,10 @@ function loadEnvironment() {
     const ceil    = loadEnvironmentCeiling();
     const objects = loadEnvironmentObjects(); 
     const walls   = loadEnvironmentWalls(); 
+
+    floor.receiveShadow = true;
+    ceil.receiveShadow = true;
+    
     
     environment.add(floor);
     environment.add(ceil);
@@ -268,18 +347,18 @@ function loadEnvironment() {
 }
 
 function loadEnvironmentCeiling() {
-    const floorMaterial = new THREE.MeshPhongMaterial({
+    const ceilMaterial = new THREE.MeshStandardMaterial({
         map: textures["ceil"].map,
         normalMap: textures["ceil"].normalMap,
         bumpMap: textures["ceil"].bumpMap,
     });
     
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(envsize, envsize, 20, 20), floorMaterial);
-    floor.rotation.x = Math.PI / 2;
-    floor.position.set(0, 8, 0);
-    floor.receiveShadow = true;
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(envsize, envsize, 20, 20), ceilMaterial);
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(0, 8, 0);
+    ceil.receiveShadow = true;
 
-    return floor;
+    return ceil;
 }
 
 function loadEnvironmentFloor() {
@@ -319,7 +398,6 @@ function loadEnvironmentWalls(material) {
 
     // arch positions
     const ap1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 4, 10), archPosMaterial);
-    //const ap1 = new THREE.RectAreaLight(0xff0000, 10, 10, 4);
 
     ap1.rotation.y = Math.PI / 2;
     ap1.position.set(pos, 0, 0);
@@ -329,10 +407,10 @@ function loadEnvironmentWalls(material) {
     ap1.name = "Spawn Position 1"
     ap2.name = "Spawn Position 2"
     
-    wall_arch1 = arch.clone();
+    let wall_arch1 = arch.clone();
     wall_arch1.position.set(pos - 11, -1, -0.5);
 
-    wall_arch2 = arch.clone();
+    let wall_arch2 = arch.clone();
     wall_arch2.position.set(-pos - 11, -1, -0.5);
     
     wall1.add(wall_plane);
@@ -343,8 +421,6 @@ function loadEnvironmentWalls(material) {
     wall1.rotation.y = Math.PI;
     wall1.position.set(0, 0,  envsize / 2);
 
-    //const a1help = new THREE.RectAreaLightHelper(a1p);
-    //a1help.add(a1p);
 
     const wall2 = wall1.clone();
     wall2.rotation.y = Math.PI;
@@ -420,6 +496,7 @@ function updateGun() {
 
 function update() {
     stats.begin();
+    console.log(camera.position);
     updateFPSCamera();
     if (gun)
         updateGun();
