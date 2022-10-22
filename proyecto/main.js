@@ -591,7 +591,11 @@ function loadEnvironmentWalls(material) {
 }
 
 function damageZombies(direction) {
-    const ray = new THREE.Raycaster(camera, direction, 0.1, 500);
+    //const ray = new THREE.Raycaster(camera, direction, 0.1, 500);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(direction, camera);
+    ray.far = 100;
+    ray.near = 0.1;
     
     const intersects = ray.intersectObjects(scene.children);
     console.log(intersects)
