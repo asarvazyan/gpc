@@ -5,22 +5,14 @@
  *
  */
 
+// Global Scene
 let renderer, scene, camera, stats;
 let ortho_top_camera, L = 30;
-let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
-let envsize = 60;
 
-let is_wire = false, is_flatshade = false;
-
+// Loaders
 let fbx_loader;
 let gltf_loader;
 let texture_loader, textures = {};
-
-let arch, ruins;
-
-let gun, gun_mixer;
-let zombie;
-
 let loading_manager;
 let loading_screen = {
     scene: new THREE.Scene(),
@@ -31,9 +23,29 @@ let loading_screen = {
     ),
     counter: 0,
 };
-
 let resources_loaded = false;
 
+// Game models
+let arch, gun, zombie;
+let gun_mixer;
+
+// Game utils
+let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
+let envsize = 60;
+let keyboard = {};
+
+let player = {
+    height: 2.5,
+    speed : 0.7,
+    turn_sensitivity: 0.003,
+}
+
+let zombies_current_round = [];
+let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward player
+let counter_next_round = 0;
+const TO_NEXT_ROUND = 200;
+
+// Game constants
 const KEYS = {
     W: 87,
     A: 65,
@@ -44,14 +56,6 @@ const KEYS = {
     ARROW_RIGHT: 39,
     ARROW_DOWN: 40,
 };
-
-let keyboard = {};
-
-let player = {
-    height: 2.5,
-    speed : 0.7,
-    turnSensitivity: 0.003,
-}
 
 const SPAWN_POINTS = [
     [ 31, -1,  16],
@@ -64,8 +68,55 @@ const SPAWN_POINTS = [
     [-16, -1,  31],
     [-16, -1, -31],
 ];
+const cloneFbx = (fbx) => {
+    const clone = fbx.clone(true)
+    clone.animations = fbx.animations
+    clone.skeleton = { bones: [] }
 
+    const skinnedMeshes = {}
 
+    fbx.traverse(node => {
+        if (node.isSkinnedMesh) {
+            skinnedMeshes[node.name] = node
+        }
+    })
+
+    const cloneBones = {}
+    const cloneSkinnedMeshes = {}
+
+    clone.traverse(node => {
+        if (node.isBone) {
+            cloneBones[node.name] = node
+        }
+
+        if (node.isSkinnedMesh) {
+            cloneSkinnedMeshes[node.name] = node
+        }
+    })
+
+    for (let name in skinnedMeshes) {
+        const skinnedMesh = skinnedMeshes[name]
+        const skeleton = skinnedMesh.skeleton
+        const cloneSkinnedMesh = cloneSkinnedMeshes[name]
+
+        const orderedCloneBones = []
+
+        for (let i=0; i<skeleton.bones.length; i++) {
+            const cloneBone = cloneBones[skeleton.bones[i].name]
+            orderedCloneBones.push(cloneBone)
+        }
+
+        cloneSkinnedMesh.bind(
+            new THREE.Skeleton(orderedCloneBones, skeleton.boneInverses),
+            cloneSkinnedMesh.matrixWorld)
+
+        // For animation to work correctly:
+        clone.skeleton.bones.push(cloneSkinnedMesh)
+        clone.skeleton.bones.push(...orderedCloneBones)
+    }
+
+    return clone
+}
 
 function init() {
     renderer = new THREE.WebGLRenderer();
@@ -189,6 +240,7 @@ function loadResources() {
     fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
         zombie = object;
         zombie.scale.set(0.02, 0.02, 0.02);
+
         zombie.traverse((child) => {
             if (child.isMesh) {
                 child.receiveShadow = true;
@@ -229,7 +281,7 @@ function loadLights() {
     const ambient = new THREE.AmbientLight(0x33333);
     scene.add(ambient);
 
-    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.3);
+    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.5);
     directional.position.set(0, 100, 0);
     directional.castShadow = true;
     scene.add(directional);
@@ -297,15 +349,18 @@ function loadLights() {
 
 function loadScene() {
     loadLights();
+    /*
+    let sp = SPAWN_POINTS[0];
+    //zombie.position.set(sp[0], sp[1], sp[2]);
+    zombie.position.set(10, -1, 10);
+    
+    sp = SPAWN_POINTS[1];
+    let zombie2 = cloneFbx(zombie);
+    zombie2.position.set(sp[0], sp[1], sp[2]);
 
-    const ambient = new THREE.AmbientLight(0x33333);
-    scene.add(ambient);
-
-    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.3);
-    directional.position.set(0, 100, 0);
-    directional.castShadow = true;
-    scene.add(directional);
-
+    scene.add(zombie);
+    scene.add(zombie2);
+    */
     
     const axesHelper = new THREE.AxesHelper(20);
     axesHelper.position.set(80, player.height, 80);
@@ -322,12 +377,12 @@ function loadEnvironment() {
 
     const floor   = loadEnvironmentFloor(); 
     const ceil    = loadEnvironmentCeiling();
-    const objects = loadEnvironmentObjects(); 
+    const objects = [gun]; 
     const walls   = loadEnvironmentWalls(); 
+    zombies_current_round = loadFirstRound();
 
     floor.receiveShadow = true;
     ceil.receiveShadow = true;
-    
     
     environment.add(floor);
     environment.add(ceil);
@@ -342,8 +397,41 @@ function loadEnvironment() {
         environment.add(object);
     }); 
 
-    return environment;
+    zombies_current_round.forEach(z =>{
+        z.castShadow = true;
+        environment.add(z);
+    }); 
 
+    return environment;
+}
+
+function loadFirstRound() {
+    let sp = SPAWN_POINTS[0];
+    zombie.position.set(sp[0], sp[1], sp[2]);
+
+    return [zombie];
+}
+
+function loadNextRound() {
+    if (zombies_current_round.length > 8) {
+        console.log("You won!");
+        return;
+    }
+    
+    for (let i = 0; i < zombies_current_round.length; i++) {
+        let sp = SPAWN_POINTS[i];
+        zombies_current_round[i].position.set(sp[0], sp[1], sp[2]);
+    }
+
+    let sp = SPAWN_POINTS[zombies_current_round.length];
+    
+    let new_zombie = cloneFbx(zombie);
+    //new_zombie.position.set(sp[0], sp[1], sp[2]);
+    new_zombie.position.set(10, -1, 10);
+    new_zombie.castShadow = true;
+    scene.add(new_zombie);
+
+    zombies_current_round.push(new_zombie);
 }
 
 function loadEnvironmentCeiling() {
@@ -382,19 +470,13 @@ function loadEnvironmentWalls(material) {
         normalMap: textures["wall"].normalMap,
         bumpMap: textures["wall"].bumpMap,
     });
-    const archPosMaterial = new THREE.MeshBasicMaterial({wireframe: is_wire, color: "red"});
+    const archPosMaterial = new THREE.MeshBasicMaterial({color: "red"});
 
     let pos = envsize / 4;// + envsize / 6;
 
     const wall1 = new THREE.Object3D();
     const wall_plane = new THREE.Mesh(new THREE.PlaneGeometry(envsize, 20, 50, 50), wallMaterial);
     
-    let sp_idx = Math.floor(Math.random() * SPAWN_POINTS.length);
-    let sp = SPAWN_POINTS[sp_idx];
-    //zombie.position.set(sp[0], sp[1], sp[2]);
-    zombie.position.set(10, -1, 10);
-
-    scene.add(zombie);
 
     // arch positions
     const ap1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 4, 10), archPosMaterial);
@@ -435,19 +517,6 @@ function loadEnvironmentWalls(material) {
     wall4.position.set(envsize / 2, 0, 0);
 
     return [wall1, wall2, wall3, wall4];
-}
-
-function loadEnvironmentObjects() {
-    //arch.position.set(0, 0, 0);
-    //arch.scale.set(0.02, 0.02, 0.02);
-
-    //gun.scale.set(0.001, 0.001, 0.001);
-
-    //ruins.position.set(0, -1, 0);
-    //ruins.scale.set(0.2, 0.2, 0.2);
-    //scene.add(ruins);
-        
-    return [gun] //,ruins];
 }
 
 function updateFPSCamera() {
@@ -494,15 +563,34 @@ function updateGun() {
     */
 }
 
+function updateZombies() {
+    counter_next_round++;
+
+    if (counter_next_round == TO_NEXT_ROUND) {
+        loadNextRound();
+        counter_next_round = 0;
+    }
+
+    zombies_current_round.forEach(z => {
+        z.lookAt(camera.position.x, -1, camera.position.z);
+        
+        let direction = new THREE.Vector3();
+        direction.subVectors(camera.position, z.position).normalize();
+        z.position.x += direction.x * 0.1;
+        z.position.z += direction.z * 0.1;
+    });
+}
+
 function update() {
     stats.begin();
-    console.log(camera.position);
+
     updateFPSCamera();
-    if (gun)
-        updateGun();
+
+    updateGun();
     
-    if (gun_mixer)
-        gun_mixer.update(1/40);
+    gun_mixer.update(1/40);
+    
+    updateZombies();
 
     stats.end();
 }
@@ -548,8 +636,8 @@ function onMouseMove(event) {
     if ((camera_direction.y < -max_y_rotation && event.movementY > 0) ||
         (camera_direction.y >  max_y_rotation && event.movementY < 0))
         return
-    camera.rotation.y -= event.movementX * player.turnSensitivity;
-    camera.rotation.x -= event.movementY * player.turnSensitivity;
+    camera.rotation.y -= event.movementX * player.turn_sensitivity;
+    camera.rotation.x -= event.movementY * player.turn_sensitivity;
 }
 
 
@@ -562,3 +650,5 @@ function onKeyDown(event) {
 }
 
 window.onload = init;
+
+
