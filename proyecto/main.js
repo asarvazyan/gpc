@@ -26,7 +26,7 @@ let loading_screen = {
 let resources_loaded = false;
 
 // Game models
-let arch, gun, zombie;
+let arch, gun, zombie, crosshairs;
 let gun_mixer; // 0 = idle, 2 = reload, 3 = show, 11 = shoot
 
 // Game utils
@@ -52,7 +52,6 @@ let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward
 let current_round = 0;
 let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
-
 
 // Game constants
 const KEYS = {
@@ -158,6 +157,7 @@ function init() {
     camera.position.set(0, player.height, 0);
     camera.lookAt(100, player.height, 0);
     camera.rotation.order = "YXZ";
+    scene.add(camera);
 
     stats = new Stats();
     stats.showPanel(0);
@@ -249,6 +249,7 @@ function loadResources() {
 
     fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
         zombie = object;
+        zombie.name = "zombie";
         zombie.scale.set(0.02, 0.02, 0.02);
 
         zombie.traverse((child) => {
@@ -366,6 +367,7 @@ function loadZombies() {
     for (var i = 1; i < 8; i++) {
         sp = SPAWN_POINTS[i];
         let zombie2 = cloneFbx(zombie);
+        zombie2.name = zombie.name;
         zombie2.position.set(sp[0], sp[1], sp[2]);
 
         scene.add(zombie2);
@@ -373,9 +375,76 @@ function loadZombies() {
     }
 }
 
+function loadCrosshairs() {
+    var pMat = new THREE.ShaderMaterial({
+        uniforms: { main_color: {value: {r: 1, g: 1, b: 1}},
+                    border_color: {value: {r: 0, g: 0, b: 0.1}},
+                   
+                    thickness: {value:0.006},
+                    height: {value:0.13},
+                    offset: {value:0.05},
+                    border: {value:0.003},
+                   
+                    opacity: {value: 1},
+                    center: {value: {x: 0.5, y: 0.5}},
+                    rotation: {value: 0}
+                },
+         vertexShader: `
+                uniform float rotation;
+                uniform vec2 center;
+                #include <common>
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    vec4 mvPosition = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );
+                    vec2 scale;
+                    scale.x = length( vec3( modelMatrix[ 0 ].x, modelMatrix[ 0 ].y, modelMatrix[ 0 ].z ) );
+                    scale.y = length( vec3( modelMatrix[ 1 ].x, modelMatrix[ 1 ].y, modelMatrix[ 1 ].z ) );
+                    #ifndef USE_SIZEATTENUATION
+                        bool isPerspective = isPerspectiveMatrix( projectionMatrix );
+                        if ( isPerspective ) scale *= - mvPosition.z;
+                    #endif
+                    vec2 alignedPosition = ( position.xy - ( center - vec2( 0.5 ) ) ) * scale;
+                    vec2 rotatedPosition;
+                    rotatedPosition.x = cos( rotation ) * alignedPosition.x - sin( rotation ) * alignedPosition.y;
+                    rotatedPosition.y = sin( rotation ) * alignedPosition.x + cos( rotation ) * alignedPosition.y;
+                    mvPosition.xy += rotatedPosition;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+         fragmentShader: `
+            uniform vec3 main_color;
+            uniform vec3 border_color;
+            uniform float opacity;
+
+            uniform float thickness;
+            uniform float height;
+            uniform float offset;
+            uniform float border;
+
+            varying vec2 vUv;
+            void main() {
+
+                float a = (step(abs(vUv.x - 0.5), thickness)) * step(abs(vUv.y - 0.5), height + offset) * step(offset, abs(vUv.y - 0.5)) + (step(abs(vUv.y - 0.5), thickness)) * step(abs(vUv.x - 0.5), height + offset) * step(offset, abs(vUv.x - 0.5));
+                float b = (step(abs(vUv.x - 0.5), thickness - border)) * step(abs(vUv.y - 0.5), height + offset - border) * step(offset + border, abs(vUv.y - 0.5)) + (step(abs(vUv.y - 0.5), thickness - border)) * step(abs(vUv.x - 0.5), height + offset - border) * step(offset + border, abs(vUv.x - 0.5));
+                gl_FragColor = vec4( mix(border_color, main_color, b), a * opacity);
+            }
+         `,
+         transparent: true,
+    });
+
+    crosshairs = new THREE.Sprite(pMat);
+    camera.add(crosshairs);
+
+    crosshairs.position.set(camera.position.x, 0, camera.position.z - 5);
+    console.log(crosshairs.position);
+    //scene.add(crosshairs);
+}
+
 function loadScene() {
     loadLights();
     loadZombies();
+    loadCrosshairs();
     
     const axesHelper = new THREE.AxesHelper(20);
     axesHelper.position.set(80, player.height, 80);
@@ -523,6 +592,23 @@ function loadEnvironmentWalls(material) {
     return [wall1, wall2, wall3, wall4];
 }
 
+function damageZombies(direction) {
+    const ray = new THREE.Raycaster(camera, direction, 0.1, 500);
+    
+    const intersects = ray.intersectObjects(scene.children);
+    console.log(intersects)
+
+    for (let i = 0; i < intersects.length; i++) {
+        let name = intersects[i].object.name;
+
+        if (name == zombie.name) {
+            console.log("Shot a zombie!");
+        }
+    }
+
+}
+
+
 function updateFPS() {
     if(keyboard[KEYS.W]){
 		camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
@@ -542,6 +628,22 @@ function updateFPS() {
 	}
     
     if (player.can_shoot < CAN_SHOOT_EVERY) player.can_shoot++; 
+    
+    /*
+    crosshairs.position.set(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z,
+    );
+    crosshairs.rotation.set(
+        -Math.sin(camera.rotation.y),
+        Math.sin(camera.rotation.x),
+        -Math.cos(camera.rotation.y)
+        //camera.position.x,
+        //camera.position.y,
+        //camera.position.z,
+    );
+    */
 
 }
 
@@ -636,7 +738,7 @@ function onMouseMove(event) {
         return
     camera.rotation.y -= event.movementX * player.turn_sensitivity;
     camera.rotation.x -= event.movementY * player.turn_sensitivity;
-
+    
 }
 
 function onMouseDown(event) {
@@ -646,9 +748,20 @@ function onMouseDown(event) {
             let action = gun_mixer.clipAction(gun.animations[11]);
             action.setLoop(THREE.LoopOnce);
             action.play().reset();
-
+            
+            // Shoot
             player.can_shoot = 0;
             ammo -= 1;
+            
+            // Check if it hit any zombie
+            let direction = new THREE.Vector3(
+                -Math.sin(camera.rotation.y),
+                Math.sin(camera.rotation.x),
+                -Math.cos(camera.rotation.y)
+            );
+
+            damageZombies(direction);
+
             console.log("Remaining ammo: " + ammo);
         }
     }
