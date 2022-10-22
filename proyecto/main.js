@@ -27,28 +27,32 @@ let resources_loaded = false;
 
 // Game models
 let arch, gun, zombie;
-let gun_mixer;
+let gun_mixer; // 0 = idle, 2 = reload, 3 = show, 11 = shoot
 
 // Game utils
 let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
 let envsize = 60;
 let keyboard = {};
 
+// Player, ammo, etc
 let player = {
     height: 2.5,
     speed : 0.7,
     turn_sensitivity: 0.003,
     can_shoot: 0,
 }
-const CAN_SHOOT_EVERY = 3;
+const CAN_SHOOT_EVERY = 5;
+const MAG_SIZE = 50;
+let ammo = MAG_SIZE;
 
+// Zombies
 let zombies = [];
 let zombies_current_round = [];
 let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward player
 let current_round = 0;
 let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
-let bullets = [];
+
 
 // Game constants
 const KEYS = {
@@ -162,6 +166,7 @@ function init() {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp)
     window.addEventListener("mousemove", onMouseMove)
+    window.addEventListener("mousedown", onMouseDown)
     window.addEventListener('resize', onResize);
     window.addEventListener("mousedown", () => {
         document.body.requestPointerLock();
@@ -535,36 +540,9 @@ function updateFPS() {
 		camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
 		camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
-
-    if(keyboard[32] && player.can_shoot >= CAN_SHOOT_EVERY) {
-        let bullet = new THREE.Mesh(
-            new THREE.SphereGeometry(0.1, 8, 8),
-            new THREE.MeshPhongMaterial({color: 0xDDDD11})
-        );
-
-        bullet.alive = true;
-        bullet.position.set(
-            camera.position.x,
-            camera.position.y,
-            camera.position.z,
-        );
-
-        bullet.velocity = new THREE.Vector3(
-            -Math.sin(camera.rotation.y),
-            Math.sin(camera.rotation.x),
-            -Math.cos(camera.rotation.y)
-        );
-
-        setTimeout(() => {
-            bullet.alive = false;
-            scene.remove(bullet);
-        }, 1000);
-
-        bullets.push(bullet);
-        scene.add(bullet);
-        player.can_shoot = 0;
-    }
+    
     if (player.can_shoot < CAN_SHOOT_EVERY) player.can_shoot++; 
+
 }
 
 function updateGun() {
@@ -582,14 +560,6 @@ function updateGun() {
     ))
 
     gun.rotation.setFromQuaternion(quaternion);
-
-    /*
-    gun.rotation.set(
-        -camera.rotation.x,
-        camera.rotation.y - Math.PI // - Math.PI / 16,
-        camera.rotation.z,
-    );
-    */
 }
 
 function updateZombies() {
@@ -610,23 +580,10 @@ function updateZombies() {
     });
 }
 
-function updateBullets() {
-    for (var i = 0; i < bullets.length; i++) {
-        if (bullets[i] === undefined) contiune;
-        if (bullets[i].alive == false) {
-            bullets.splice(i, 1);
-            continue;
-        }
-
-        bullets[i].position.add(bullets[i].velocity);
-    }
-}
-
 function update() {
     stats.begin();
     
     updateFPS();
-    updateBullets();
     updateGun();
     
     gun_mixer.update(1/40);
@@ -680,6 +637,31 @@ function onMouseMove(event) {
     camera.rotation.y -= event.movementX * player.turn_sensitivity;
     camera.rotation.x -= event.movementY * player.turn_sensitivity;
 
+}
+
+function onMouseDown(event) {
+    if (event.buttons == 1) { // left to shoot
+
+        if(player.can_shoot >= CAN_SHOOT_EVERY && ammo > 0) {
+            let action = gun_mixer.clipAction(gun.animations[11]);
+            action.setLoop(THREE.LoopOnce);
+            action.play().reset();
+
+            player.can_shoot = 0;
+            ammo -= 1;
+            console.log("Remaining ammo: " + ammo);
+        }
+    }
+    else if (event.buttons == 2) { // right to reload
+        if (ammo < MAG_SIZE) {
+            let action = gun_mixer.clipAction(gun.animations[2]);
+            action.setLoop(THREE.LoopOnce);
+            action.play().reset();
+
+            ammo = MAG_SIZE;
+            console.log("Reloaded! Remaining ammo: " + ammo);
+        }
+    }
 }
 
 
