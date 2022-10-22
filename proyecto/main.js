@@ -40,8 +40,10 @@ let player = {
     turn_sensitivity: 0.003,
 }
 
+let zombies = [];
 let zombies_current_round = [];
 let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward player
+let current_round = 0;
 let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
 
@@ -56,11 +58,9 @@ const KEYS = {
     ARROW_RIGHT: 39,
     ARROW_DOWN: 40,
 };
-
 const SPAWN_POINTS = [
     [ 31, -1,  16],
     [ 31, -1, -16],
-    [-31, -1,  16],
     [-31, -1,  16],
     [-31, -1, -16],
     [ 16, -1,  31],
@@ -68,6 +68,8 @@ const SPAWN_POINTS = [
     [-16, -1,  31],
     [-16, -1, -31],
 ];
+
+// https://gist.github.com/kevincharm/bf12a2c673b43a3988f0f171a05794c1 
 const cloneFbx = (fbx) => {
     const clone = fbx.clone(true)
     clone.animations = fbx.animations
@@ -347,20 +349,25 @@ function loadLights() {
     */
 }
 
+function loadZombies() {
+    let sp = SPAWN_POINTS[0];
+    zombie.position.set(sp[0], sp[1], sp[2]);
+    scene.add(zombie);
+    zombies = [zombie];
+
+    for (var i = 1; i < 8; i++) {
+        sp = SPAWN_POINTS[i];
+        let zombie2 = cloneFbx(zombie);
+        zombie2.position.set(sp[0], sp[1], sp[2]);
+
+        scene.add(zombie2);
+        zombies.push(zombie2);
+    }
+}
+
 function loadScene() {
     loadLights();
-    /*
-    let sp = SPAWN_POINTS[0];
-    //zombie.position.set(sp[0], sp[1], sp[2]);
-    zombie.position.set(10, -1, 10);
-    
-    sp = SPAWN_POINTS[1];
-    let zombie2 = cloneFbx(zombie);
-    zombie2.position.set(sp[0], sp[1], sp[2]);
-
-    scene.add(zombie);
-    scene.add(zombie2);
-    */
+    loadZombies();
     
     const axesHelper = new THREE.AxesHelper(20);
     axesHelper.position.set(80, player.height, 80);
@@ -379,7 +386,8 @@ function loadEnvironment() {
     const ceil    = loadEnvironmentCeiling();
     const objects = [gun]; 
     const walls   = loadEnvironmentWalls(); 
-    zombies_current_round = loadFirstRound();
+    
+    loadNextRound();
 
     floor.receiveShadow = true;
     ceil.receiveShadow = true;
@@ -399,39 +407,27 @@ function loadEnvironment() {
 
     zombies_current_round.forEach(z =>{
         z.castShadow = true;
-        environment.add(z);
     }); 
 
     return environment;
 }
 
-function loadFirstRound() {
-    let sp = SPAWN_POINTS[0];
-    zombie.position.set(sp[0], sp[1], sp[2]);
-
-    return [zombie];
+function resetZombies() {
+    for (var i = 0; i < zombies.length; i++) {
+        let sp = SPAWN_POINTS[i];
+        zombies[i].position.set(sp[0], sp[1], sp[2]);
+    }
 }
 
 function loadNextRound() {
-    if (zombies_current_round.length > 8) {
+    if (current_round == 8) {
         console.log("You won!");
         return;
     }
-    
-    for (let i = 0; i < zombies_current_round.length; i++) {
-        let sp = SPAWN_POINTS[i];
-        zombies_current_round[i].position.set(sp[0], sp[1], sp[2]);
-    }
 
-    let sp = SPAWN_POINTS[zombies_current_round.length];
-    
-    let new_zombie = cloneFbx(zombie);
-    //new_zombie.position.set(sp[0], sp[1], sp[2]);
-    new_zombie.position.set(10, -1, 10);
-    new_zombie.castShadow = true;
-    scene.add(new_zombie);
-
-    zombies_current_round.push(new_zombie);
+    current_round++;
+    resetZombies();
+    zombies_current_round = zombies.slice(0, current_round);
 }
 
 function loadEnvironmentCeiling() {
@@ -570,7 +566,7 @@ function updateZombies() {
         loadNextRound();
         counter_next_round = 0;
     }
-
+    
     zombies_current_round.forEach(z => {
         z.lookAt(camera.position.x, -1, camera.position.z);
         
