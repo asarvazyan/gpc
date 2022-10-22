@@ -376,14 +376,15 @@ function loadZombies() {
 }
 
 function loadCrosshairs() {
+    // https://codepen.io/driezis/pen/jOPzjLG 
     var pMat = new THREE.ShaderMaterial({
         uniforms: { main_color: {value: {r: 1, g: 1, b: 1}},
                     border_color: {value: {r: 0, g: 0, b: 0.1}},
                    
-                    thickness: {value:0.006},
-                    height: {value:0.13},
-                    offset: {value:0.05},
-                    border: {value:0.003},
+                    thickness: {value:0.004},
+                    height: {value:0.05},
+                    offset: {value:0.02},
+                    border: {value:0.001},
                    
                     opacity: {value: 1},
                     center: {value: {x: 0.5, y: 0.5}},
@@ -435,10 +436,7 @@ function loadCrosshairs() {
 
     crosshairs = new THREE.Sprite(pMat);
     camera.add(crosshairs);
-
-    crosshairs.position.set(camera.position.x, 0, camera.position.z - 5);
-    console.log(crosshairs.position);
-    //scene.add(crosshairs);
+    crosshairs.position.set(camera.position.x, 0, camera.position.z - 0.1);
 }
 
 function loadScene() {
