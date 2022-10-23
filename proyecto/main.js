@@ -17,11 +17,6 @@ let loading_manager;
 let loading_screen = {
     scene: new THREE.Scene(),
     camera: new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100),
-    box: new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.5, 0.5),
-        new THREE.MeshBasicMaterial({color: 0x4444ff}),
-    ),
-    counter: 0,
 };
 let resources_loaded = false;
 
@@ -52,11 +47,9 @@ let ammo = MAG_SIZE;
 // Zombies
 let zombies = [];
 let zombies_current_round = [];
-let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward player
 let current_round = 0;
-let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
-const ZOMBIE_MAX_HEALTH = 5; // need this many shots to kill 
+const ZOMBIE_MAX_HEALTH = 10; // need this many shots to kill 
 
 
 // Game constants
@@ -141,19 +134,21 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     // Loading Screen
-    loading_screen.box.position.set(0, 0, 5);
-    loading_screen.camera.lookAt(loading_screen.box.position);
-    loading_screen.scene.add(loading_screen.box);
+    loading_screen.camera.lookAt(0, 0, 0);
 
     loading_manager = new THREE.LoadingManager(); 
+    let i = 0;
     loading_manager.onProgress = (item, loaded, total) => {
-        console.log(item, loaded, total);
+        document.getElementById("info").innerText = "Loading" + ".".repeat(i);
+        i++;
+        i = i % 3;
     };
 
     loading_manager.onLoad = () => {
         console.log("All resources loaded");
         resources_loaded = true;
-    
+        let div = document.getElementById("info");
+        div.parentNode.removeChild(div);
         loadScene();
         //render();
     };
@@ -300,18 +295,15 @@ function loadLights() {
     const directional = new THREE.DirectionalLight(0xFFFFFF, 0.5);
     directional.position.set(0, 100, 0);
     directional.castShadow = true;
+    directional.shadow.camera.far    = 20;
+    directional.shadow.camera.fov    = 80;
+    directional.shadow.camera.near   = 1;
+    directional.shadow.camera.far    = 500;
+    directional.shadow.camera.left   = -500;
+    directional.shadow.camera.right  = 500;
+    directional.shadow.camera.top    = 500;
+    directional.shadow.camera.bottom = -500;
     scene.add(directional);
-
-    // One focal in the center
-    const focal = new THREE.SpotLight(0xFF0000, 0.3);
-    focal.position.set(0, 6, 0);
-    focal.target.position.set(0, -1, 0);
-    focal.angle = Math.PI / 4;
-    focal.penumbra = 0.3;
-    focal.castShadow = true;
-    focal.shadow.camera.far = 5;
-    focal.shadow.camera.fov = 10;
-    scene.add(focal);
 
     // One focal at each corner
     const focal1 = new THREE.SpotLight(0xFF0000, 0.3);
@@ -320,8 +312,14 @@ function loadLights() {
     focal1.angle = Math.PI / 4;
     focal1.penumbra = 0.3;
     focal1.castShadow = true;
-    focal1.shadow.camera.far = 20;
-    focal1.shadow.camera.fov = 80;
+    focal1.shadow.camera.far    = 20;
+    focal1.shadow.camera.fov    = 80;
+    focal1.shadow.camera.near   = 1;
+    focal1.shadow.camera.far    = 500;
+    focal1.shadow.camera.left   = -500;
+    focal1.shadow.camera.right  = 500;
+    focal1.shadow.camera.top    = 500;
+    focal1.shadow.camera.bottom = -500;
     scene.add(focal1);
 
     const focal2 = new THREE.SpotLight(0xFF0000, 0.3);
@@ -330,8 +328,14 @@ function loadLights() {
     focal2.angle = Math.PI / 4;
     focal2.penumbra = 0.3;
     focal2.castShadow = true;
-    focal2.shadow.camera.far = 20;
-    focal2.shadow.camera.fov = 80;
+    focal2.shadow.camera.far    = 20;
+    focal2.shadow.camera.fov    = 80;
+    focal2.shadow.camera.near   = 1;
+    focal2.shadow.camera.far    = 500;
+    focal2.shadow.camera.left   = -500;
+    focal2.shadow.camera.right  = 500;
+    focal2.shadow.camera.top    = 500;
+    focal2.shadow.camera.bottom = -500;
     scene.add(focal2);
 
     const focal3 = new THREE.SpotLight(0xFF0000, 0.3);
@@ -340,8 +344,14 @@ function loadLights() {
     focal3.angle = Math.PI / 4;
     focal3.penumbra = 0.3;
     focal3.castShadow = true;
-    focal3.shadow.camera.far = 20;
-    focal3.shadow.camera.fov = 80;
+    focal3.shadow.camera.far    = 20;
+    focal3.shadow.camera.fov    = 80;
+    focal3.shadow.camera.near   = 1;
+    focal3.shadow.camera.far    = 500;
+    focal3.shadow.camera.left   = -500;
+    focal3.shadow.camera.right  = 500;
+    focal3.shadow.camera.top    = 500;
+    focal3.shadow.camera.bottom = -500;
     scene.add(focal3);
 
     const focal4 = new THREE.SpotLight(0xFF0000, 0.3);
@@ -350,8 +360,14 @@ function loadLights() {
     focal4.angle = Math.PI / 4;
     focal4.penumbra = 0.3;
     focal4.castShadow = true;
-    focal4.shadow.camera.far = 20;
-    focal4.shadow.camera.fov = 80;
+    focal4.shadow.camera.far    = 20;
+    focal4.shadow.camera.fov    = 80;
+    focal4.shadow.camera.near   = 1;
+    focal4.shadow.camera.far    = 500;
+    focal4.shadow.camera.left   = -500;
+    focal4.shadow.camera.right  = 500;
+    focal4.shadow.camera.top    = 500;
+    focal4.shadow.camera.bottom = -500;
     scene.add(focal4);
     
     /*
@@ -710,15 +726,6 @@ function update() {
 function render() {
     if (resources_loaded === false) {
         requestAnimationFrame(render);
-        
-        loading_screen.counter += 0.01;
-        if (loading_screen.counter == 360) {
-            loading_screen.counter = 0;
-        }
-        // Lemniscate of Gerono
-        loading_screen.box.position.x = 7 * Math.cos(loading_screen.counter);
-        loading_screen.box.position.y = 7 * Math.sin(2 * loading_screen.counter) / 2;
-
 
         renderer.render(loading_screen.scene, loading_screen.camera);
         return;
