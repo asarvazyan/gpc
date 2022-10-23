@@ -620,25 +620,40 @@ function damageZombies() {
 
 }
 
+function inBoundaries(next_x, next_z) {
+    return (next_x < envsize / 2 && next_x > -envsize / 2 &&
+        next_z < envsize / 2 && next_z > -envsize / 2);
+}
 
 function updateFPS() {
+	let dx_frontback = Math.sin(camera.rotation.y) * player.speed;
+    let dz_frontback = Math.cos(camera.rotation.y) * player.speed;
+    let dx_sides = Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+    let dz_sides = Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+
+    let next_x, next_z; 
     if(keyboard[KEYS.W]){
-		camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
-		camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
+		next_x = camera.position.x - Math.sin(camera.rotation.y) * player.speed;
+		next_z = camera.position.z - Math.cos(camera.rotation.y) * player.speed;
 	}
 	if(keyboard[KEYS.S]){
-		camera.position.x += Math.sin(camera.rotation.y) * player.speed;
-		camera.position.z += Math.cos(camera.rotation.y) * player.speed;
+		next_x = camera.position.x + Math.sin(camera.rotation.y) * player.speed;
+		next_z = camera.position.z + Math.cos(camera.rotation.y) * player.speed;
 	}
 	if(keyboard[KEYS.A]){
-		camera.position.x -= Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
-		camera.position.z -= Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+		next_x = camera.position.x - Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+		next_z = camera.position.z - Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
 	if(keyboard[KEYS.D]){
-		camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
-		camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+		next_x = camera.position.x + Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+		next_z = camera.position.z + Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
 	}
-    
+
+    if (inBoundaries(next_x, next_z)) {
+        camera.position.x = next_x;
+        camera.position.z = next_z;
+    }
+
     if (player.can_shoot < CAN_SHOOT_EVERY) player.can_shoot++; 
 }
 
@@ -660,11 +675,13 @@ function updateGun() {
 }
 
 function updateZombies() {
-    counter_next_round++;
+    let next_round = true;
+    zombies_current_round.forEach(z => {
+        next_round &= z.health <= 0;
+    });
 
-    if (counter_next_round == TO_NEXT_ROUND) {
+    if (next_round) {
         loadNextRound();
-        counter_next_round = 0;
     }
     
     zombies_current_round.forEach(z => {
@@ -684,7 +701,7 @@ function update() {
     updateGun();
     
     gun_mixer.update(1/40);
-    
+
     updateZombies();
 
     stats.end();
