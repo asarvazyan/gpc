@@ -172,25 +172,33 @@ function loadLights() {
     const ambient = new THREE.AmbientLight(0x33333);
     scene.add(ambient);
 
-    const directional = new THREE.DirectionalLight(0xFFFFFF, 0.3);
-    directional.position.set(0, 250, 0);
+    const directional = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directional.position.set(-110, 200, -20);
     directional.castShadow = true;
+    directional.shadow.camera.far    = 20;
+    directional.shadow.camera.fov    = 80;
+    directional.shadow.camera.near   = 1;
+    directional.shadow.camera.far    = 1000;
+    directional.shadow.camera.left   = -1000;
+    directional.shadow.camera.right  = 1000;
+    directional.shadow.camera.top    = 1000;
+    directional.shadow.camera.bottom = -1000;
     scene.add(directional);
     
     const focal = new THREE.SpotLight(0xFFFFFF, 0.8);
     focal.position.set(100, 400, 100);
-    focal.target.position.set(0, 250, 0);
+    focal.target.position.set(0, 100, 0);
     focal.angle = Math.PI / 4;
     focal.penumbra = 0.3;
     focal.castShadow = true;
     focal.shadow.camera.far    = 20;
     focal.shadow.camera.fov    = 80;
     focal.shadow.camera.near   = 1;
-    focal.shadow.camera.far    = 1000;
-    focal.shadow.camera.left   = -1000;
-    focal.shadow.camera.right  = 1000;
-    focal.shadow.camera.top    = 1000;
-    focal.shadow.camera.bottom = -1000;
+    focal.shadow.camera.far    = 500;
+    focal.shadow.camera.left   = -500;
+    focal.shadow.camera.right  = 500;
+    focal.shadow.camera.top    = 500;
+    focal.shadow.camera.bottom = -500;
     scene.add(focal);
 }
 

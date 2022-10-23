@@ -11,18 +11,20 @@ class Robot {
         this.textureLoader = textureLoader;
 
         this.lambert = new THREE.MeshLambertMaterial({
+            wireframe: false,
             map: this.textureLoader.load("lapis/Main_Base_Color.png"),
             normalMap: this.textureLoader.load("lapis/Main_Metallic.png"),
             bumpMap: this.textureLoader.load("lapis/Main_Roughness.png"),
         });
 
         this.phong = new THREE.MeshPhongMaterial({
+            wireframe: false,
             map: this.textureLoader.load("yellow_plastic/YellowPlastic_d.jpg"),
             normalMap: this.textureLoader.load("yellow_plastic/YellowPlastic_n.jpg"),
             bumpMap: this.textureLoader.load("yellow_plastic/YellowPlastic_r.jpg"),
         });
 
-        this.sphere_phong = new THREE.MeshPhongMaterial({envMap: environmentMap});
+        this.sphere_phong = new THREE.MeshPhongMaterial({wireframe: false, envMap: environmentMap});
 
         this.geometry_meshes = []; // objects with meshes
         this.geometry = this.loadRobot();
@@ -49,9 +51,9 @@ class Robot {
     }
 
     toggleWireframe() {
-        this.geometry_meshes.forEach(geometry => {
-            geometry.material.wireframe = !geometry.material.wireframe;
-        });
+        this.lambert.wireframe = !this.lambert.wireframe;
+        this.phong.wireframe = !this.phong.wireframe;
+        this.sphere_phong.wireframe = !this.sphere_phong.wireframe;
     }
 
     loadRobot() {
