@@ -27,6 +27,7 @@ let physics_world;
 // Game models
 let arch, gun, zombie, crosshairs;
 let gun_mixer; // 0 = idle, 2 = reload, 3 = show, 11 = shoot
+let zombie_mixers = [];
 
 // Game utils
 let camera_direction, neg_z = new THREE.Vector3(0, 0, -1), max_y_rotation = 0.55;
@@ -49,8 +50,7 @@ let zombies = [];
 let zombies_current_round = [];
 let current_round = 0;
 const TO_NEXT_ROUND = 200;
-const ZOMBIE_MAX_HEALTH = 10; // need this many shots to kill 
-
+const ZOMBIE_MAX_HEALTH = 1; //10; // need this many shots to kill 
 
 // Game constants
 const KEYS = {
@@ -139,16 +139,16 @@ function init() {
     loading_manager = new THREE.LoadingManager(); 
     let i = 0;
     loading_manager.onProgress = (item, loaded, total) => {
-        document.getElementById("info").innerText = "Loading" + ".".repeat(i);
+        document.getElementById("loading").innerText = "Loading" + ".".repeat(i);
         i++;
         i = i % 3;
     };
 
     loading_manager.onLoad = () => {
-        console.log("All resources loaded");
         resources_loaded = true;
-        let div = document.getElementById("info");
+        let div = document.getElementById("loading");
         div.parentNode.removeChild(div);
+        document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
         loadScene();
         //render();
     };
@@ -238,6 +238,11 @@ function loadResources() {
 
     fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
         zombie = object;
+
+        zombie_mixers = [new THREE.AnimationMixer(zombie)];
+        const action = zombie_mixers[0].clipAction(zombie.animations[0]);
+        action.play();
+
         zombie.name = "zombie";
         zombie.scale.set(0.02, 0.02, 0.02);
 
@@ -383,12 +388,12 @@ function loadZombies() {
     let sp = SPAWN_POINTS[0];
     zombie.position.set(sp[0], sp[1], sp[2]);
     scene.add(zombie);
+
     zombies = [zombie];
 
     for (var i = 1; i < 8; i++) {
         sp = SPAWN_POINTS[i];
         let zombie2 = cloneFbx(zombie);
-        zombie2.name = zombie.name;
         zombie2.position.set(sp[0], sp[1], sp[2]);
 
         scene.add(zombie2);
@@ -516,13 +521,19 @@ function resetZombies() {
     }
 }
 
+function winScreen() {
+    document.getElementById("loading").innerText = "You won!";
+}
+
 function loadNextRound() {
     if (current_round == 8) {
-        console.log("You won!");
+        winScreen();
         return;
     }
 
     current_round++;
+    
+    document.getElementById("roundcount").innerText = "ROUND " + current_round;
     resetZombies();
     zombies_current_round = zombies.slice(0, current_round);
 }
@@ -629,8 +640,6 @@ function damageZombies() {
             if (hit_zombie.health == 0) {
                 hit_zombie.position.y = -10;
             }
-            console.log(intersects[i].object);
-            console.log("Shot a zombie!");
         }
     }
 
@@ -705,9 +714,16 @@ function updateZombies() {
         
         let direction = new THREE.Vector3();
         direction.subVectors(camera.position, z.position).normalize();
-        z.position.x += direction.x * 0.1;
-        z.position.z += direction.z * 0.1;
+        z.position.x += direction.x * 0.15;
+        z.position.z += direction.z * 0.15;
     });
+}
+
+function updateMixers() {
+    gun_mixer.update(1 / 40);
+    zombie_mixers.forEach(zmx => {
+        zmx.update(1 / 40);
+    }) 
 }
 
 function update() {
@@ -715,8 +731,7 @@ function update() {
     
     updateFPS();
     updateGun();
-    
-    gun_mixer.update(1/40);
+    updateMixers(); 
 
     updateZombies();
 
@@ -770,10 +785,9 @@ function onMouseDown(event) {
             // Shoot
             player.can_shoot = 0;
             ammo -= 1;
+            document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
             
             damageZombies();
-
-            console.log("Remaining ammo: " + ammo);
         }
     }
     else if (event.buttons == 2) { // right to reload
@@ -783,7 +797,7 @@ function onMouseDown(event) {
             action.play().reset();
 
             ammo = MAG_SIZE;
-            console.log("Reloaded! Remaining ammo: " + ammo);
+            document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
         }
     }
 }

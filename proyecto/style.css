@@ -3,12 +3,34 @@ body {
     overflow: hidden;
 }
 
-#info {
+#loading {
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
 	text-align: center;
+	z-index: 100;
+    color: white;
+    font-size: 40px;
+}
+
+#roundcount {
+    position: absolute;
+    bottom: 12%;
+    left: 2%;
+    width: 30%;
+	text-align: left;
+	z-index: 100;
+    color: white;
+    font-size: 40px;
+}
+
+#ammo {
+    position: absolute;
+    bottom: 2%;
+    left: 2%;
+    width: 30%;
+	text-align: left;
 	z-index: 100;
     color: white;
     font-size: 40px;
