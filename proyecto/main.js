@@ -25,6 +25,10 @@ let loading_screen = {
 };
 let resources_loaded = false;
 
+// Physics
+let gravity = -9.8;
+let physics_world;
+
 // Game models
 let arch, gun, zombie, crosshairs;
 let gun_mixer; // 0 = idle, 2 = reload, 3 = show, 11 = shoot
@@ -52,6 +56,8 @@ let zombies_current_round_states = []; // 0 = dead, 1 = alive and running toward
 let current_round = 0;
 let counter_next_round = 0;
 const TO_NEXT_ROUND = 200;
+const ZOMBIE_MAX_HEALTH = 5; // need this many shots to kill 
+
 
 // Game constants
 const KEYS = {
@@ -74,6 +80,7 @@ const SPAWN_POINTS = [
     [-16, -1,  31],
     [-16, -1, -31],
 ];
+
 
 // https://gist.github.com/kevincharm/bf12a2c673b43a3988f0f171a05794c1 
 const cloneFbx = (fbx) => {
@@ -146,7 +153,7 @@ function init() {
     loading_manager.onLoad = () => {
         console.log("All resources loaded");
         resources_loaded = true;
-
+    
         loadScene();
         //render();
     };
@@ -176,7 +183,7 @@ function init() {
 
     fbx_loader = new THREE.FBXLoader(loading_manager);
     gltf_loader = new THREE.GLTFLoader(loading_manager);
-
+    
 
     loadResources();
     render();
@@ -234,23 +241,21 @@ function loadResources() {
 
     loadTextures();
 
-    /*
-    gltf_loader.load("resources/environment/centerpiece/source/Unity2Skfb.gltf", object => {
-        ruins = object.scene;
-        ruins.traverse((child) => {
-            if (child.isMesh) {
-                child.receiveShadow = true;
-                child.castShadow = true;
-            }
-        });
-    });
-
-    */
-
     fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
         zombie = object;
         zombie.name = "zombie";
         zombie.scale.set(0.02, 0.02, 0.02);
+
+        let zombie_bbox = new THREE.Mesh(
+            new THREE.BoxGeometry(60, 210, 20),
+            new THREE.MeshBasicMaterial({transparent: true, opacity: 0.0})
+        );
+        zombie_bbox.name = "zombie_bbox";
+        zombie.add(zombie_bbox);
+
+        zombie_bbox.position.set(
+            0, 100, 0
+        )
 
         zombie.traverse((child) => {
             if (child.isMesh) {
@@ -491,6 +496,7 @@ function resetZombies() {
     for (var i = 0; i < zombies.length; i++) {
         let sp = SPAWN_POINTS[i];
         zombies[i].position.set(sp[0], sp[1], sp[2]);
+        zombies[i].health = ZOMBIE_MAX_HEALTH;
     }
 }
 
@@ -547,7 +553,6 @@ function loadEnvironmentWalls(material) {
 
     const wall1 = new THREE.Object3D();
     const wall_plane = new THREE.Mesh(new THREE.PlaneGeometry(envsize, 20, 50, 50), wallMaterial);
-    
 
     // arch positions
     const ap1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 4, 10), archPosMaterial);
@@ -574,7 +579,6 @@ function loadEnvironmentWalls(material) {
     wall1.rotation.y = Math.PI;
     wall1.position.set(0, 0,  envsize / 2);
 
-
     const wall2 = wall1.clone();
     wall2.rotation.y = Math.PI;
     wall2.position.set(0, 0, -envsize / 2);
@@ -587,23 +591,29 @@ function loadEnvironmentWalls(material) {
     wall4.rotation.y = -Math.PI / 2;
     wall4.position.set(envsize / 2, 0, 0);
 
+
     return [wall1, wall2, wall3, wall4];
 }
 
-function damageZombies(direction) {
-    //const ray = new THREE.Raycaster(camera, direction, 0.1, 500);
+function damageZombies() {
+    let direction = new THREE.Vector2(0, 0);
     const ray = new THREE.Raycaster();
     ray.setFromCamera(direction, camera);
-    ray.far = 100;
+    ray.far = 1000;
     ray.near = 0.1;
     
     const intersects = ray.intersectObjects(scene.children);
-    console.log(intersects)
 
     for (let i = 0; i < intersects.length; i++) {
         let name = intersects[i].object.name;
 
-        if (name == zombie.name) {
+        if (name == "zombie_bbox") {
+            let hit_zombie = intersects[i].object.parent;
+            hit_zombie.health--;
+            if (hit_zombie.health == 0) {
+                hit_zombie.position.y = -10;
+            }
+            console.log(intersects[i].object);
             console.log("Shot a zombie!");
         }
     }
@@ -630,23 +640,6 @@ function updateFPS() {
 	}
     
     if (player.can_shoot < CAN_SHOOT_EVERY) player.can_shoot++; 
-    
-    /*
-    crosshairs.position.set(
-        camera.position.x,
-        camera.position.y,
-        camera.position.z,
-    );
-    crosshairs.rotation.set(
-        -Math.sin(camera.rotation.y),
-        Math.sin(camera.rotation.x),
-        -Math.cos(camera.rotation.y)
-        //camera.position.x,
-        //camera.position.y,
-        //camera.position.z,
-    );
-    */
-
 }
 
 function updateGun() {
@@ -740,7 +733,6 @@ function onMouseMove(event) {
         return
     camera.rotation.y -= event.movementX * player.turn_sensitivity;
     camera.rotation.x -= event.movementY * player.turn_sensitivity;
-    
 }
 
 function onMouseDown(event) {
@@ -755,14 +747,7 @@ function onMouseDown(event) {
             player.can_shoot = 0;
             ammo -= 1;
             
-            // Check if it hit any zombie
-            let direction = new THREE.Vector3(
-                -Math.sin(camera.rotation.y),
-                Math.sin(camera.rotation.x),
-                -Math.cos(camera.rotation.y)
-            );
-
-            damageZombies(direction);
+            damageZombies();
 
             console.log("Remaining ammo: " + ammo);
         }
