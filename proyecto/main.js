@@ -4,6 +4,7 @@
  * @author <arsar1@inf.upv.es>
  *
  */
+import * as SkeletonUtils from "../r140/lib/SkeletonUtils.js";
 
 // Global Scene
 let renderer, scene, camera, stats;
@@ -146,8 +147,7 @@ function init() {
 
     loading_manager.onLoad = () => {
         resources_loaded = true;
-        let div = document.getElementById("loading");
-        div.parentNode.removeChild(div);
+        document.getElementById("loading").innerText = "";
         document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
         loadScene();
         //render();
@@ -236,7 +236,7 @@ function loadResources() {
 
     loadTextures();
 
-    fbx_loader.load("resources/zombies/Zombie_Running.fbx", object => {
+    fbx_loader.load("resources/zombies/Zombie\ Running.fbx", object => {
         zombie = object;
 
         zombie_mixers = [new THREE.AnimationMixer(zombie)];
@@ -263,6 +263,8 @@ function loadResources() {
                 child.castShadow = true;
             }
         });
+
+        //loadZombies();
     });
 
     fbx_loader.load("resources/environment/arch/source/arch.FBX", object => {
@@ -374,14 +376,6 @@ function loadLights() {
     focal4.shadow.camera.top    = 500;
     focal4.shadow.camera.bottom = -500;
     scene.add(focal4);
-    
-    /*
-    scene.add(new THREE.SpotLightHelper(focal));
-    scene.add(new THREE.SpotLightHelper(focal1));
-    scene.add(new THREE.SpotLightHelper(focal2));
-    scene.add(new THREE.SpotLightHelper(focal3));
-    scene.add(new THREE.SpotLightHelper(focal4));
-    */
 }
 
 function loadZombies() {
@@ -393,8 +387,13 @@ function loadZombies() {
 
     for (var i = 1; i < 8; i++) {
         sp = SPAWN_POINTS[i];
-        let zombie2 = cloneFbx(zombie);
+        //let zombie2 = cloneFbx(zombie);
+        let zombie2 = SkeletonUtils.clone(zombie);
         zombie2.position.set(sp[0], sp[1], sp[2]);
+
+        zombie_mixers.push(new THREE.AnimationMixer(zombie2));
+        let action = zombie_mixers[i].clipAction(zombie.animations[0]);
+        action.play();
 
         scene.add(zombie2);
         zombies.push(zombie2);
@@ -522,11 +521,12 @@ function resetZombies() {
 }
 
 function winScreen() {
-    document.getElementById("loading").innerText = "You won!";
+    //document.getElementById("loading").innerText = "You won!\nReload the page to play again!";
+    return;
 }
 
 function loadNextRound() {
-    if (current_round == 8) {
+    if (current_round == 3) {
         winScreen();
         return;
     }
