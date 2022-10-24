@@ -535,7 +535,7 @@ function loseScreen() {
 }
 
 function loadNextRound() {
-    if (current_round == 3) {
+    if (current_round == 8) {
         winScreen();
         return;
     }
