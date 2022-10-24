@@ -53,7 +53,8 @@ let zombies = [];
 let zombies_current_round = [];
 let current_round = 0;
 const TO_NEXT_ROUND = 200;
-const ZOMBIE_MAX_HEALTH = 10; //10; // need this many shots to kill 
+const ZOMBIE_MAX_HEALTH = 1; //10; // need this many shots to kill 
+let extensions = 0;
 
 // Game constants
 const KEYS = {
@@ -76,58 +77,16 @@ const SPAWN_POINTS = [
     [-16, -1,  31],
     [-16, -1, -31],
 ];
-
-
-// https://gist.github.com/kevincharm/bf12a2c673b43a3988f0f171a05794c1 
-const cloneFbx = (fbx) => {
-    const clone = fbx.clone(true)
-    clone.animations = fbx.animations
-    clone.skeleton = { bones: [] }
-
-    const skinnedMeshes = {}
-
-    fbx.traverse(node => {
-        if (node.isSkinnedMesh) {
-            skinnedMeshes[node.name] = node
-        }
-    })
-
-    const cloneBones = {}
-    const cloneSkinnedMeshes = {}
-
-    clone.traverse(node => {
-        if (node.isBone) {
-            cloneBones[node.name] = node
-        }
-
-        if (node.isSkinnedMesh) {
-            cloneSkinnedMeshes[node.name] = node
-        }
-    })
-
-    for (let name in skinnedMeshes) {
-        const skinnedMesh = skinnedMeshes[name]
-        const skeleton = skinnedMesh.skeleton
-        const cloneSkinnedMesh = cloneSkinnedMeshes[name]
-
-        const orderedCloneBones = []
-
-        for (let i=0; i<skeleton.bones.length; i++) {
-            const cloneBone = cloneBones[skeleton.bones[i].name]
-            orderedCloneBones.push(cloneBone)
-        }
-
-        cloneSkinnedMesh.bind(
-            new THREE.Skeleton(orderedCloneBones, skeleton.boneInverses),
-            cloneSkinnedMesh.matrixWorld)
-
-        // For animation to work correctly:
-        clone.skeleton.bones.push(cloneSkinnedMesh)
-        clone.skeleton.bones.push(...orderedCloneBones)
-    }
-
-    return clone
-}
+const SPAWN_POINT_NORMALS = [
+    [ 1, 0,  0],
+    [ 1, 0,  0],
+    [-1, 0,  0],
+    [-1, 0,  0],
+    [ 0, 0,  1],
+    [ 0, 0,  1],
+    [ 0, 0, -1],
+    [ 0, 0, -1]
+];
 
 function init() {
     renderer = new THREE.WebGLRenderer();
@@ -265,8 +224,6 @@ function loadResources() {
                 child.castShadow = true;
             }
         });
-
-        //loadZombies();
     });
 
     fbx_loader.load("resources/environment/arch/source/arch.FBX", object => {
@@ -380,7 +337,25 @@ function loadLights() {
     scene.add(focal4);
 }
 
+function extendZombies() {
+    extensions += 5;
+    for (var i = zombies.length; i < zombies.length + 8; i++) {
+        sp = SPAWN_POINTS[i];
+        spn = SPAWN_POINT_NORMALS[i]
+        let zombie2 = SkeletonUtils.clone(zombie);
+        zombie2.position.set(sp[0]+extensions*spn[0], sp[1], sp[2]+extensions*spn[2]);
+
+        zombie_mixers.push(new THREE.AnimationMixer(zombie2));
+        let action = zombie_mixers[i].clipAction(zombie.animations[0]);
+        setTimeout(() => {action.play();}, Math.random() * 1000);
+
+        scene.add(zombie2);
+        zombies.push(zombie2);
+    }
+}
+
 function loadZombies() {
+
     let sp = SPAWN_POINTS[0];
     zombie.position.set(sp[0], sp[1], sp[2]);
     scene.add(zombie);
@@ -389,7 +364,6 @@ function loadZombies() {
 
     for (var i = 1; i < 8; i++) {
         sp = SPAWN_POINTS[i];
-        //let zombie2 = cloneFbx(zombie);
         let zombie2 = SkeletonUtils.clone(zombie);
         zombie2.position.set(sp[0], sp[1], sp[2]);
 
@@ -473,7 +447,7 @@ function loadScene() {
     loadCrosshairs();
     
     const axesHelper = new THREE.AxesHelper(20);
-    axesHelper.position.set(80, player.height, 80);
+    axesHelper.position.set(10, player.height, 10);
 
     const environment = loadEnvironment();
     environment.position.set(0, 0, 0);
@@ -523,12 +497,6 @@ function resetZombies() {
     }
 }
 
-function winScreen() {
-    //document.getElementById("loading").innerText = "You won!\nReload the page to play again!";
-    console.log("You win!");
-    return;
-}
-
 function loseScreen() {
     while(scene.children.length > 0){ 
         scene.remove(scene.children[0]); 
@@ -543,12 +511,10 @@ function loseScreen() {
 }
 
 function loadNextRound() {
-    if (current_round == 8) {
-        winScreen();
-        return;
-    }
-
     current_round++;
+    if (current_round == zombies.length) {
+        extendZombies();
+    }
     
     document.getElementById("roundcount").innerText = "ROUND " + current_round;
     resetZombies();
