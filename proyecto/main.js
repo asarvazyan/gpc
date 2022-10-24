@@ -41,8 +41,10 @@ let player = {
     speed : 0.7,
     turn_sensitivity: 0.003,
     can_shoot: 0,
+    health: 1000,
 }
 const CAN_SHOOT_EVERY = 5;
+const MAX_DIST_FOR_HIT = 2;
 const MAG_SIZE = 50;
 let ammo = MAG_SIZE;
 
@@ -465,6 +467,7 @@ function loadCrosshairs() {
 }
 
 function loadScene() {
+    scene.fog = new THREE.FogExp2(0xff0000, 0.04);
     loadLights();
     loadZombies();
     loadCrosshairs();
@@ -522,6 +525,12 @@ function resetZombies() {
 
 function winScreen() {
     //document.getElementById("loading").innerText = "You won!\nReload the page to play again!";
+    console.log("You win!");
+    return;
+}
+
+function loseScreen() {
+    console.log("You lost!");
     return;
 }
 
@@ -726,6 +735,25 @@ function updateMixers() {
     }) 
 }
 
+function distance(v1, v2) {
+    let dx = v1.x - v2.x;
+    let dz = v1.z - v2.z;
+    return Math.sqrt(dx * dx + dz * dz)
+}
+
+function updatePlayerHealth() {
+    zombies.forEach(zmx => {
+        let dist = distance(zmx.position, camera.position);
+        if (dist < MAX_DIST_FOR_HIT) {
+            player.health -= 1;
+        }
+    });
+
+    if (player.health <= 0) {
+        loseScreen();
+    }
+}
+
 function update() {
     stats.begin();
     
@@ -734,6 +762,7 @@ function update() {
     updateMixers(); 
 
     updateZombies();
+    updatePlayerHealth();
 
     stats.end();
 }
