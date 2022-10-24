@@ -1,6 +1,31 @@
 body {
     margin: 0px;
     overflow: hidden;
+    background: black;
+}
+
+#startbutton {
+  background-color: #fdd;
+  border: 5px solid #f22;
+  color: #f22;
+  text-align: center;
+  display: inline-block;
+  padding: 15px 32px;
+  font-size: 40px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+#startbutton:hover {
+  background-color: #f22;
+  border: 5px solid #222;
+  color: #222;
+  text-align: center;
+  display: inline-block;
+  padding: 17px 35px;
+  font-size: 44px;
+  margin: 4px 2px;
+  cursor: pointer;
 }
 
 #loading {
@@ -9,6 +34,28 @@ body {
     top: 50%;
     transform: translate(-50%, -50%);
 	text-align: center;
+	z-index: 100;
+    color: #f22;
+    font-size: 40px;
+}
+
+#overlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+	text-align: center;
+	z-index: 100;
+    color: white;
+    font-size: 40px;
+}
+
+#zombiecount {
+    position: absolute;
+    bottom: 2%;
+    left: 2%;
+    width: 30%;
+	text-align: left;
 	z-index: 100;
     color: white;
     font-size: 40px;
@@ -25,12 +72,22 @@ body {
     font-size: 40px;
 }
 
+#health {
+    position: absolute;
+    bottom: 12%;
+    right: 2%;
+    width: 30%;
+	text-align: right;
+	z-index: 100;
+    color: white;
+    font-size: 40px;
+}
 #ammo {
     position: absolute;
     bottom: 2%;
-    left: 2%;
+    right: 2%;
     width: 30%;
-	text-align: left;
+	text-align: right;
 	z-index: 100;
     color: white;
     font-size: 40px;

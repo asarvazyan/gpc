@@ -7,12 +7,11 @@
 import * as SkeletonUtils from "../r140/lib/SkeletonUtils.js";
 
 // Global Scene
-let renderer, scene, camera, stats;
+let renderer, scene, camera, stats, listener;
 let ortho_top_camera, L = 30;
 
 // Loaders
-let fbx_loader;
-let gltf_loader;
+let fbx_loader, audio_loader;
 let texture_loader, textures = {};
 let loading_manager;
 let loading_screen = {
@@ -20,6 +19,9 @@ let loading_screen = {
     camera: new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100),
 };
 let resources_loaded = false;
+
+// Audio
+let music;
 
 // Physics
 let gravity = -9.8;
@@ -36,12 +38,13 @@ let envsize = 60;
 let keyboard = {};
 
 // Player, ammo, etc
+const MAX_PLAYER_HEALTH = 200;
 let player = {
     height: 2.5,
     speed : 0.7,
     turn_sensitivity: 0.003,
     can_shoot: 0,
-    health: 200,
+    health: MAX_PLAYER_HEALTH,
 }
 const CAN_SHOOT_EVERY = 5;
 const MAX_DIST_FOR_HIT = 2;
@@ -53,7 +56,8 @@ let zombies = [];
 let zombies_current_round = [];
 let current_round = 0;
 const TO_NEXT_ROUND = 200;
-const ZOMBIE_MAX_HEALTH = 1; //10; // need this many shots to kill 
+const ZOMBIE_MIN_HEALTH = 2; 
+const ZOMBIE_MAX_HEALTH = 5;
 let extensions = 0;
 
 // Game constants
@@ -83,12 +87,24 @@ const SPAWN_POINT_NORMALS = [
     [-1, 0,  0],
     [-1, 0,  0],
     [ 0, 0,  1],
+    [ 0, 0, -1],
     [ 0, 0,  1],
     [ 0, 0, -1],
-    [ 0, 0, -1]
 ];
 
+const start_button = document.getElementById("startbutton");
+start_button.addEventListener("click", init);
+
+function getRandomInt(min, max) {
+    // Random int within [min, max] both inclusive
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function init() {
+    document.getElementById("overlay").remove();
+
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000);
@@ -106,12 +122,13 @@ function init() {
         i = i % 3;
     };
 
+    listener = new THREE.AudioListener();
+
     loading_manager.onLoad = () => {
         resources_loaded = true;
         document.getElementById("loading").innerText = "";
-        document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
+        document.getElementById("ammo").innerText = "Ammo: " + ammo + "/" + MAG_SIZE;
         loadScene();
-        //render();
     };
 
     scene =  new THREE.Scene();
@@ -120,7 +137,11 @@ function init() {
     camera.position.set(0, player.height, 0);
     camera.lookAt(100, player.height, 0);
     camera.rotation.order = "YXZ";
+    camera.add(listener);
     scene.add(camera);
+
+    audio_loader = new THREE.AudioLoader(loading_manager).setPath("resources/audio/");
+    loadAudio();
 
     stats = new Stats();
     stats.showPanel(0);
@@ -138,11 +159,19 @@ function init() {
     texture_loader = new THREE.TextureLoader(loading_manager).setPath("resources/");
 
     fbx_loader = new THREE.FBXLoader(loading_manager);
-    gltf_loader = new THREE.GLTFLoader(loading_manager);
-    
 
     loadResources();
     render();
+}
+
+function loadAudio() {
+    music = new THREE.Audio(listener);
+    audio_loader.load("zombies.wav", buffer => {
+        music.setBuffer(buffer);
+        music.setLoop(true);
+        music.setVolume(0.3);
+        music.play();
+    });
 }
 
 function loadTextures() {
@@ -338,16 +367,20 @@ function loadLights() {
 }
 
 function extendZombies() {
-    extensions += 5;
-    for (var i = zombies.length; i < zombies.length + 8; i++) {
-        sp = SPAWN_POINTS[i];
-        spn = SPAWN_POINT_NORMALS[i]
+    extensions += 3;
+    let new_length = zombies.length+8;
+    for (var i = zombies.length; i < new_length; i++) {
+        let sp = SPAWN_POINTS[i % 8];
+        let spn = SPAWN_POINT_NORMALS[i % 8];
         let zombie2 = SkeletonUtils.clone(zombie);
+        //zombie2.spawnpoint = new THREE.Vector3(sp[0]+extensions*spn[0], sp[1], sp[2]+extensions*spn[2]); 
+        //zombie2.spawnpoint = new THREE.Vector3(sp[0]-10, sp[1], sp[2]-10); 
+        //console.log(zombie2.spawnpoint);
         zombie2.position.set(sp[0]+extensions*spn[0], sp[1], sp[2]+extensions*spn[2]);
 
         zombie_mixers.push(new THREE.AnimationMixer(zombie2));
         let action = zombie_mixers[i].clipAction(zombie.animations[0]);
-        setTimeout(() => {action.play();}, Math.random() * 1000);
+        setTimeout(() => {action.play();}, Math.random() * 3000);
 
         scene.add(zombie2);
         zombies.push(zombie2);
@@ -358,6 +391,7 @@ function loadZombies() {
 
     let sp = SPAWN_POINTS[0];
     zombie.position.set(sp[0], sp[1], sp[2]);
+    //zombie.spawnpoint = sp;
     scene.add(zombie);
 
     zombies = [zombie];
@@ -366,10 +400,11 @@ function loadZombies() {
         sp = SPAWN_POINTS[i];
         let zombie2 = SkeletonUtils.clone(zombie);
         zombie2.position.set(sp[0], sp[1], sp[2]);
+        //zombie2.spawnpoint = sp;
 
         zombie_mixers.push(new THREE.AnimationMixer(zombie2));
         let action = zombie_mixers[i].clipAction(zombie.animations[0]);
-        setTimeout(() => {action.play();}, Math.random() * 1000);
+        setTimeout(() => {action.play();}, Math.random() * 3000);
 
         scene.add(zombie2);
         zombies.push(zombie2);
@@ -447,7 +482,7 @@ function loadScene() {
     loadCrosshairs();
     
     const axesHelper = new THREE.AxesHelper(20);
-    axesHelper.position.set(10, player.height, 10);
+    axesHelper.position.set(100, player.height, 100);
 
     const environment = loadEnvironment();
     environment.position.set(0, 0, 0);
@@ -482,18 +517,26 @@ function loadEnvironment() {
         environment.add(object);
     }); 
 
-    zombies_current_round.forEach(z =>{
-        z.castShadow = true;
-    }); 
-
     return environment;
 }
 
 function resetZombies() {
-    for (var i = 0; i < zombies.length; i++) {
-        let sp = SPAWN_POINTS[i];
-        zombies[i].position.set(sp[0], sp[1], sp[2]);
-        zombies[i].health = ZOMBIE_MAX_HEALTH;
+    for (var i = 0, every_eight = 0; i < zombies.length; i++) {
+        if (i % 8 == 0) every_eight++;
+
+        let sp = SPAWN_POINTS[i % 8];
+        let spn = SPAWN_POINT_NORMALS[i % 8];
+        zombies[i].position.set(
+            sp[0] + every_eight * extensions * spn[0], 
+            sp[1],
+            sp[2] + every_eight * extensions * spn[2], 
+        );
+
+        //zombies[i].position.copy(zombies[i].spawnpoint);
+        //let zsp = zombies[i].spawnpoint;
+        //zombies[i].position.set(zsp[0], zsp[1], zsp[2]);
+        //
+        zombies[i].health = getRandomInt(ZOMBIE_MIN_HEALTH, ZOMBIE_MAX_HEALTH);
     }
 }
 
@@ -502,21 +545,24 @@ function loseScreen() {
         scene.remove(scene.children[0]); 
     }
     if (current_round > 1)
-        document.getElementById("loading").innerText = "You lost after " + current_round + " rounds!\nReload the page to play again!";
+        document.getElementById("loading").innerText = "You lost after " + current_round + " rounds!\nReload the page to play again";
     else
-        document.getElementById("loading").innerText = "You lost after " + current_round + " round!\nReload the page to play again!";
+        document.getElementById("loading").innerText = "You lost after " + current_round + " round!\nReload the page to play again";
     document.getElementById("roundcount").innerText = "";
     document.getElementById("ammo").innerText = "";
+    document.getElementById("zombiecount").innerText = "";
+    document.getElementById("health").innerText = "";
     return;
 }
 
 function loadNextRound() {
+    player.health = MAX_PLAYER_HEALTH;
     current_round++;
     if (current_round == zombies.length) {
         extendZombies();
     }
     
-    document.getElementById("roundcount").innerText = "ROUND " + current_round;
+    document.getElementById("roundcount").innerText = "Round " + current_round;
     resetZombies();
     zombies_current_round = zombies.slice(0, current_round);
 }
@@ -694,13 +740,17 @@ function updateZombies() {
     
     zombies_current_round.forEach(z => {
         z.lookAt(camera.position.x, -1, camera.position.z);
-        // Make directions not perfect
-        let random_vector = new THREE.Vector3(Math.random(), Math.random(), Math.random()); 
+        // Need to make directions not perfect
+        let dx = 3;
+        let dz = 3;
+        let random_vector = new THREE.Vector3(Math.random() * dx, 0, Math.random() * dz); 
         let direction = new THREE.Vector3();
         direction.subVectors(camera.position, z.position).add(random_vector).normalize();
         z.position.x += direction.x * 0.15;
         z.position.z += direction.z * 0.15;
     });
+
+    document.getElementById("zombiecount").innerText = "Zombies: " + zombies_current_round.length;
 }
 
 function updateMixers() {
@@ -723,7 +773,7 @@ function updatePlayerHealth() {
             player.health -= 1;
         }
     });
-
+    document.getElementById("health").innerText = "Health: " + player.health;
 }
 
 function update() {
@@ -815,7 +865,3 @@ function onKeyUp(event) {
 function onKeyDown(event) {
     keyboard[event.keyCode] = true
 }
-
-window.onload = init;
-
-
