@@ -395,7 +395,7 @@ function loadZombies() {
 
         zombie_mixers.push(new THREE.AnimationMixer(zombie2));
         let action = zombie_mixers[i].clipAction(zombie.animations[0]);
-        action.play();
+        setTimeout(() => {action.play();}, Math.random() * 1000);
 
         scene.add(zombie2);
         zombies.push(zombie2);
@@ -530,7 +530,15 @@ function winScreen() {
 }
 
 function loseScreen() {
-    console.log("You lost!");
+    while(scene.children.length > 0){ 
+        scene.remove(scene.children[0]); 
+    }
+    if (current_round > 1)
+        document.getElementById("loading").innerText = "You lost after " + current_round + " rounds!\nReload the page to play again!";
+    else
+        document.getElementById("loading").innerText = "You lost after " + current_round + " round!\nReload the page to play again!";
+    document.getElementById("roundcount").innerText = "";
+    document.getElementById("ammo").innerText = "";
     return;
 }
 
@@ -720,9 +728,10 @@ function updateZombies() {
     
     zombies_current_round.forEach(z => {
         z.lookAt(camera.position.x, -1, camera.position.z);
-        
+        // Make directions not perfect
+        let random_vector = new THREE.Vector3(Math.random(), Math.random(), Math.random()); 
         let direction = new THREE.Vector3();
-        direction.subVectors(camera.position, z.position).normalize();
+        direction.subVectors(camera.position, z.position).add(random_vector).normalize();
         z.position.x += direction.x * 0.15;
         z.position.z += direction.z * 0.15;
     });
@@ -749,13 +758,14 @@ function updatePlayerHealth() {
         }
     });
 
-    if (player.health <= 0) {
-        loseScreen();
-    }
 }
 
 function update() {
     stats.begin();
+    if (player.health <= 0) {
+        loseScreen();
+        return;
+    }
     
     updateFPS();
     updateGun();
