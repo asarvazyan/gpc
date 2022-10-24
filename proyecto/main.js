@@ -41,7 +41,7 @@ let player = {
     speed : 0.7,
     turn_sensitivity: 0.003,
     can_shoot: 0,
-    health: 1000,
+    health: 200,
 }
 const CAN_SHOOT_EVERY = 5;
 const MAX_DIST_FOR_HIT = 2;
@@ -53,7 +53,7 @@ let zombies = [];
 let zombies_current_round = [];
 let current_round = 0;
 const TO_NEXT_ROUND = 200;
-const ZOMBIE_MAX_HEALTH = 1; //10; // need this many shots to kill 
+const ZOMBIE_MAX_HEALTH = 10; //10; // need this many shots to kill 
 
 // Game constants
 const KEYS = {
