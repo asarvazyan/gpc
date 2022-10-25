@@ -5,3 +5,4 @@ Ceiling Texture: https://gametextures.com/texture/scavenged-corrugated-metal-wal
 Floor Texture: https://textures.pixel-furnace.com/texture?name=Diamond%20Grass%20Paver
 Zombies from mixamo
 Music is my own, made using BeepBox
+Gun sound: https://soundbible.com/1547-M1-Garand-Single.html

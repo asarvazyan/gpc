@@ -21,7 +21,7 @@ let loading_screen = {
 let resources_loaded = false;
 
 // Audio
-let music;
+let music, gunshot_sound;
 
 // Physics
 let gravity = -9.8;
@@ -171,6 +171,11 @@ function loadAudio() {
         music.setLoop(true);
         music.setVolume(0.3);
         music.play();
+    });
+    gunshot_sound = new THREE.Audio(listener);
+    audio_loader.load("gun.wav", buffer => {
+        gunshot_sound.setBuffer(buffer);
+        gunshot_sound.setVolume(0.3);
     });
 }
 
@@ -840,6 +845,9 @@ function onMouseDown(event) {
             // Shoot
             player.can_shoot = 0;
             ammo -= 1;
+            if (gunshot_sound.isPlaying) gunshot_sound.stop();
+            gunshot_sound.play();
+
             document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
             
             damageZombies();
