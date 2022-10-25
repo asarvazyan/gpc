@@ -5,27 +5,27 @@ body {
 }
 
 #startbutton {
-  background-color: #fdd;
-  border: 5px solid #f22;
-  color: #f22;
-  text-align: center;
-  display: inline-block;
-  padding: 15px 32px;
-  font-size: 40px;
-  margin: 4px 2px;
-  cursor: pointer;
+    background-color: #fdd;
+    border: 5px solid #f22;
+    color: #f22;
+    text-align: center;
+    display: inline-block;
+    padding: 15px 32px;
+    font-size: 40px;
+    margin: 4px 2px;
+    cursor: pointer;
 }
 
 #startbutton:hover {
-  background-color: #f22;
-  border: 5px solid #222;
-  color: #222;
-  text-align: center;
-  display: inline-block;
-  padding: 17px 35px;
-  font-size: 44px;
-  margin: 4px 2px;
-  cursor: pointer;
+    background-color: #f22;
+    border: 5px solid #222;
+    color: #222;
+    text-align: center;
+    display: inline-block;
+    padding: 17px 35px;
+    font-size: 44px;
+    margin: 4px 2px;
+    cursor: pointer;
 }
 
 #loading {
@@ -50,45 +50,28 @@ body {
     font-size: 40px;
 }
 
-#zombiecount {
+#lefthud {
+    background-image: linear-gradient(to left, rgba(0,0,0,0), rgba(0,0,0,1));
+    padding: 4px 4px 4px 12px;
+    color: #FBB;
     position: absolute;
     bottom: 2%;
     left: 2%;
-    width: 30%;
+    width: 20%;
 	text-align: left;
 	z-index: 100;
-    color: white;
     font-size: 40px;
 }
 
-#roundcount {
-    position: absolute;
-    bottom: 12%;
-    left: 2%;
-    width: 30%;
-	text-align: left;
-	z-index: 100;
-    color: white;
-    font-size: 40px;
-}
-
-#health {
-    position: absolute;
-    bottom: 12%;
-    right: 2%;
-    width: 30%;
-	text-align: right;
-	z-index: 100;
-    color: white;
-    font-size: 40px;
-}
-#ammo {
+#righthud {
+    background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,1));
+    padding: 4px 12px 4px 4px;
+    color: #FBB;
     position: absolute;
     bottom: 2%;
     right: 2%;
-    width: 30%;
+    width: 20%;
 	text-align: right;
 	z-index: 100;
-    color: white;
     font-size: 40px;
 }
