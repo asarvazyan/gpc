@@ -378,9 +378,6 @@ function extendZombies() {
         let sp = SPAWN_POINTS[i % 8];
         let spn = SPAWN_POINT_NORMALS[i % 8];
         let zombie2 = SkeletonUtils.clone(zombie);
-        //zombie2.spawnpoint = new THREE.Vector3(sp[0]+extensions*spn[0], sp[1], sp[2]+extensions*spn[2]); 
-        //zombie2.spawnpoint = new THREE.Vector3(sp[0]-10, sp[1], sp[2]-10); 
-        //console.log(zombie2.spawnpoint);
         zombie2.position.set(sp[0]+extensions*spn[0], sp[1], sp[2]+extensions*spn[2]);
 
         zombie_mixers.push(new THREE.AnimationMixer(zombie2));
@@ -396,7 +393,6 @@ function loadZombies() {
 
     let sp = SPAWN_POINTS[0];
     zombie.position.set(sp[0], sp[1], sp[2]);
-    //zombie.spawnpoint = sp;
     scene.add(zombie);
 
     zombies = [zombie];
@@ -405,7 +401,6 @@ function loadZombies() {
         sp = SPAWN_POINTS[i];
         let zombie2 = SkeletonUtils.clone(zombie);
         zombie2.position.set(sp[0], sp[1], sp[2]);
-        //zombie2.spawnpoint = sp;
 
         zombie_mixers.push(new THREE.AnimationMixer(zombie2));
         let action = zombie_mixers[i].clipAction(zombie.animations[0]);
@@ -537,10 +532,6 @@ function resetZombies() {
             sp[2] + every_eight * extensions * spn[2], 
         );
 
-        //zombies[i].position.copy(zombies[i].spawnpoint);
-        //let zsp = zombies[i].spawnpoint;
-        //zombies[i].position.set(zsp[0], zsp[1], zsp[2]);
-        //
         zombies[i].health = getRandomInt(ZOMBIE_MIN_HEALTH, ZOMBIE_MAX_HEALTH);
     }
 }
