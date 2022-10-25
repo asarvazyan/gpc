@@ -20,6 +20,11 @@ let loading_screen = {
 };
 let resources_loaded = false;
 
+// HUD
+let hud_on = true;
+let hud_counter = 0;
+let MIN_HUD_TOGGLE = 2;
+
 // Audio
 let music, gunshot_sound;
 
@@ -70,6 +75,7 @@ const KEYS = {
     ARROW_UP: 38,
     ARROW_RIGHT: 39,
     ARROW_DOWN: 40,
+    E: 69,
 };
 const SPAWN_POINTS = [
     [ 31, -1,  16],
@@ -126,6 +132,8 @@ function init() {
 
     loading_manager.onLoad = () => {
         resources_loaded = true;
+        document.getElementById("instructions").remove();
+        document.getElementById("title").remove();
         document.getElementById("loading").innerText = "";
         document.getElementById("ammo").innerText = "Ammo: " + ammo + "/" + MAG_SIZE;
         loadScene();
@@ -662,7 +670,7 @@ function damageZombies() {
         if (name == "zombie_bbox") {
             let hit_zombie = intersects[i].object.parent;
             hit_zombie.health--;
-            if (hit_zombie.health == 0) {
+            if (hit_zombie.health <= 0) {
                 hit_zombie.position.y = -10;
             }
         }
@@ -726,9 +734,15 @@ function updateGun() {
 
 function updateZombies() {
     let next_round = true;
+    let counter_z = 0;
     zombies_current_round.forEach(z => {
+        if (z.health > 0){
+            counter_z++;
+        }
         next_round &= z.health <= 0;
+        
     });
+    document.getElementById("zombiecount").innerText = "Zombies: " + counter_z;
 
     if (next_round) {
         loadNextRound();
@@ -745,8 +759,6 @@ function updateZombies() {
         z.position.x += direction.x * 0.15;
         z.position.z += direction.z * 0.15;
     });
-
-    document.getElementById("zombiecount").innerText = "Zombies: " + zombies_current_round.length;
 }
 
 function updateMixers() {
@@ -772,13 +784,30 @@ function updatePlayerHealth() {
     document.getElementById("health").innerText = "Health: " + player.health;
 }
 
+function updateHUD() {
+    hud_counter++;
+    if (keyboard[KEYS.E] && hud_on && hud_counter > MIN_HUD_TOGGLE) {
+        // Hide HUD
+        document.getElementById("lefthud").hidden = true;
+        document.getElementById("righthud").hidden = true;
+        hud_on = false;
+        hud_counter = 0;
+    }
+    else if (keyboard[KEYS.E] && !hud_on && hud_counter > MIN_HUD_TOGGLE) {
+        hud_on = true;
+        document.getElementById("lefthud").hidden = false;
+        document.getElementById("righthud").hidden = false;
+        hud_counter = 0;
+    }
+}
+
 function update() {
     stats.begin();
     if (player.health <= 0) {
         loseScreen();
         return;
     }
-    
+    updateHUD(); 
     updateFPS();
     updateGun();
     updateMixers(); 
@@ -839,7 +868,7 @@ function onMouseDown(event) {
             if (gunshot_sound.isPlaying) gunshot_sound.stop();
             gunshot_sound.play();
 
-            document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
+            document.getElementById("ammo").innerText = "Ammo: " + ammo + "/" + MAG_SIZE;
             
             damageZombies();
         }
@@ -851,7 +880,7 @@ function onMouseDown(event) {
             action.play().reset();
 
             ammo = MAG_SIZE;
-            document.getElementById("ammo").innerText = "AMMO " + ammo + "/" + MAG_SIZE;
+            document.getElementById("ammo").innerText = "Ammo: " + ammo + "/" + MAG_SIZE;
         }
     }
 }

@@ -2,23 +2,33 @@
 <html lang="es">
     <head>
         <meta charset="utf-8">
-        <title> Proyecto GPC: FPS Zombies </title>
+        <title> Hope Before Hell </title>
         <link rel="stylesheet" href="./style.css">
     </head>
     <body>
         <div class="webgl"></div>
         <div id="loading"></div>
+
         <div id="lefthud"> 
             <div id="roundcount"></div>
             <div id="zombiecount"></div>
         </div>
+
         <div id="righthud"> 
-        <div id="ammo"></div>
-        <div id="health"></div>
+            <div id="ammo"></div>
+            <div id="health"></div>
         </div>
+        <div id="title">Hope Before Hell</div>
 
         <div id="overlay">
             <button id="startbutton">S T A R T</button>
+        </div>
+        <div id="instructions">
+            <div id="move">Move: WASD</div>
+            <div id="aim">Aim: Mouse</div>
+            <div id="shoot">Shoot: Left Click</div>
+            <div id="reload">Reload: Right Click</div>
+            <div id="hud">Toggle HUD: E</div>
         </div>
 
         <script src="../r140/lib/three.min_r140.js"></script>
